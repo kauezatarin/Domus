@@ -4,6 +4,10 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
+	<RuntimeIdentifiers>win10-x64;ubuntu.16.10-x64</RuntimeIdentifiers>
+    <ApplicationIcon>Dome.ico</ApplicationIcon>
+    <Win32Resource />
+    <StartupObject>Domus.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

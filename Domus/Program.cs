@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using Domus;
@@ -28,14 +29,21 @@ namespace Domus
             Thread connectionCleaner = null;
             connectionString = "SERVER=" + config.databaseIP + ";" + "PORT=" + config.databasePort + ";" + "DATABASE=" + config.databaseName + ";" + "UID=" + config.databaseUser + ";" + "PASSWORD=" + config.databasePassword + ";";
 
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
+
             try
             {
+                ConsoleWrite("Domus Server - Version: {0}", true, Assembly.GetExecutingAssembly().GetName().Version);
+                ConsoleWrite("To Exit press Ctrl + C.",false);
+
                 //cria a conexão
                 deviceServer = Connect(config.deviceListeningPort);
                 clientServer = Connect(config.clientListeningPort);
-
+                
                 if (deviceServer == null || clientServer == null)//se falhar sai do programa
                 {
+                    ConsoleWrite("Fail to start listeners.",true);
+                    
                     Console.Read();
                     return;
                 }
@@ -63,6 +71,7 @@ namespace Domus
                 deviceListener = new Thread(() => DeviceListener(deviceServer));
                 deviceListener.Name = "Device Listener";
                 deviceListener.Start();
+
                 /*
                 ConsoleWrite("Starting client listener on port {0}", true, config.clientListeningPort);
                 clientListener = new Thread(() => ClientListener(clientServer));
@@ -138,6 +147,15 @@ namespace Domus
             while (!desligar)
             {
                 Thread.Sleep(100);
+            }
+        }
+
+        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            if (e.SpecialKey == ConsoleSpecialKey.ControlC)
+            {
+                desligar = true;
+                e.Cancel = true;
             }
         }
 
@@ -686,6 +704,7 @@ namespace Domus
 
         private static void JoinAllConnections()
         {
+
             //Join Devices
             foreach (var device in DeviceConnections)
             {
@@ -699,6 +718,7 @@ namespace Domus
                 if (client.conexao.IsAlive)
                     client.conexao.Join();
             }
+
         }
 
         //função que resgata o IP local do servidor

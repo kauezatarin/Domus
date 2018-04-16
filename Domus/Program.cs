@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
-using Domus;
+using RSACypher;
 
 namespace Domus
 {
@@ -72,13 +72,13 @@ namespace Domus
                 deviceListener.Name = "Device Listener";
                 deviceListener.Start();
 
-                /*
+                
                 ConsoleWrite("Starting client listener on port {0}", true, config.clientListeningPort);
                 clientListener = new Thread(() => ClientListener(clientServer));
                 clientListener.Name = "Client Listener";
                 clientListener.Start();
                 ConsoleWrite("Client connection length set to {0} with hash type {1}", true, config.RSAlength, config.HashTypeName());
-                */
+                
                 WaitKillCommand();
             }
             catch (SocketException e)
@@ -203,7 +203,7 @@ namespace Domus
                 }
             }
         }
-        /*
+        
         //thread responsavel por aguardar conexões de clientes
         private static void ClientListener(TcpListener clientServer)
         {
@@ -249,7 +249,7 @@ namespace Domus
                 }
             }
         }
-        */
+        
         //Thread que cuida dos dispositivos após conectado
         private static void DeviceThread(TcpClient device, ConnectionCommandStore me)
         {
@@ -422,7 +422,7 @@ namespace Domus
 
             return;
         }
-        /*
+        
         //Thread que cuida dos clientes após conectado
         private static void ClientThread(TcpClient client, ConnectionCommandStore me)
         {
@@ -619,7 +619,7 @@ namespace Domus
 
             }
             return;
-        }*/
+        }
 
         //Função para printar no console
         private static void ConsoleWrite(string message, bool logThis, params object[] args)
@@ -704,7 +704,6 @@ namespace Domus
 
         private static void JoinAllConnections()
         {
-
             //Join Devices
             foreach (var device in DeviceConnections)
             {
@@ -718,7 +717,6 @@ namespace Domus
                 if (client.conexao.IsAlive)
                     client.conexao.Join();
             }
-
         }
 
         //função que resgata o IP local do servidor

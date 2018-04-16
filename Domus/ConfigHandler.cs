@@ -83,7 +83,7 @@ namespace Domus
                     configWrite.WriteLine("minDataDelay: 30");
                     configWrite.WriteLine(configWrite.NewLine + "#RSA criptography:");
                     configWrite.WriteLine("#RSA Types: 0- SHA1  1- SHA256  2- SHA512");
-                    configWrite.WriteLine("RSAlength: 2048");
+                    configWrite.WriteLine("RSAlength: 1024");
                     configWrite.WriteLine("RSAHashType: 0");
                     configWrite.WriteLine(configWrite.NewLine + "#Log Settings. Set maxLogSize in MB, -1 to unlimited:");
                     configWrite.WriteLine("#The 'forceLog' option is used to force the server to write everything to the Log file.");

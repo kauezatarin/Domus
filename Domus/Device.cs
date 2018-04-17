@@ -4,14 +4,13 @@ using System.Text;
 
 namespace Domus
 {
-    class Device
+    public class Device
     {
-        public Device(string deviceName, string deviceType, int userId, string createdAt, string lastActivity, string deviceId = null, bool data1_active = false, bool data2_active = false, bool data3_active = false, bool data4_active = false, string data1_name = " ", string data2_name = " ", string data3_name = " ", string data4_name = " ")
+        public Device(string deviceName, string deviceType, string createdAt, string lastActivity, string deviceId = null, bool data1_active = false, bool data2_active = false, bool data3_active = false, bool data4_active = false, string data1_name = " ", string data2_name = " ", string data3_name = " ", string data4_name = " ")
         {
             this.deviceId = deviceId;
             this.deviceName = deviceName;
             this.deviceType = deviceType;
-            this.userId = userId;
             this.createdAt = createdAt;
             this.lastActivity = lastActivity;
             this.data1_active = data1_active;
@@ -29,8 +28,6 @@ namespace Domus
         public string deviceName { get; set; }
 
         public string deviceType { get; set; }
-
-        public int userId { get; set; }
 
         public string createdAt { get; set; }
 

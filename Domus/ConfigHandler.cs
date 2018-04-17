@@ -35,13 +35,13 @@ namespace Domus
 
         public string fullLogAction { get; private set; } = "stop";
 
-        public int RSAlength { get; private set; } = 2048;
+        public int RSAlength { get; private set; } = 1024;
 
         public int RSAHashType { get; private set; } = 0;
 
         public string databaseIP { get; private set; } = "localhost";
 
-        public string databasePort { get; private set; } = "3306";
+        public int databasePort { get; private set; } = 3306;
 
         public string databaseUser { get; private set; } = "root";
 
@@ -177,7 +177,7 @@ namespace Domus
                     {
                         RSAlength = Convert.ToInt32(line.Split(':')[1].Trim(' '));
 
-                        if (RSAlength <= 1024 || RSAlength > 16384)
+                        if (RSAlength < 1024 || RSAlength > 16384)
                         {
                             AddLog("RSA lenght can't be less than 1024 or higher than 16384 (2048 recommended). Using recommended value.");
 
@@ -217,7 +217,7 @@ namespace Domus
                     }
                     else if (line.Contains("databasePort"))
                     {
-                        databasePort = line.Split(':')[1].Trim(' ');
+                        databasePort = Convert.ToInt32(line.Split(':')[1].Trim(' '));
                     }
                     else if (line.Contains("databaseUser"))
                     {

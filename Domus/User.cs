@@ -4,11 +4,10 @@ using System.Text;
 
 namespace Domus
 {
-    class User
+    public class User
     {
         public User(string username, string email, string name, string lastName, bool isAdmin, bool isActive, string createdAt, string lastLogin, string password = null, int userId = 0)
         {
-            this.userId = userId;
             this.username = username;
             this.email = email;
             this.name = name;
@@ -18,6 +17,7 @@ namespace Domus
             this.createdAt = createdAt;
             this.lastLogin = lastLogin;
             this.password = password;
+            this.userId = userId;
         }
 
 

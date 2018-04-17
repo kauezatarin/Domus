@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -27,7 +26,7 @@ namespace Domus
             Thread deviceListener = null;
             Thread clientListener = null;
             Thread connectionCleaner = null;
-            connectionString = "SERVER=" + config.databaseIP + ";" + "PORT=" + config.databasePort + ";" + "DATABASE=" + config.databaseName + ";" + "UID=" + config.databaseUser + ";" + "PASSWORD=" + config.databasePassword + ";";
+            connectionString = DatabaseHandler.CreateConnectionString(config.databaseIP, config.databasePort, config.databaseName, config.databaseUser, config.databasePassword);
 
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
 
@@ -47,7 +46,7 @@ namespace Domus
                     Console.Read();
                     return;
                 }
-                /*
+                
                 //verifica se o banco de dados está ativo
                 try
                 {
@@ -59,7 +58,7 @@ namespace Domus
                     ConsoleWrite("Database connection Failure. {0}", true, e.Message);
                     Console.Read();
                     return;
-                }*/
+                }
 
                 connectionCleaner = new Thread(() => ClearConnectionList());
                 connectionCleaner.IsBackground = true;
@@ -308,23 +307,21 @@ namespace Domus
                         while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
                         {
                             // Translate data bytes to a ASCII string.
-                            data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+                            data = Encoding.ASCII.GetString(bytes, 0, i);
 
                             if (getingDeviceInfos && data.Contains("infos"))//set device infos to the memory
                             {
-                                ConnectionCommandStore temp = null;
-
-                                try//verify if the device already has an connection on the list.
-                                {
-                                    temp = DeviceConnections.First(ConnectionCommandStore =>
+                                ConnectionCommandStore temp = DeviceConnections.FirstOrDefault(ConnectionCommandStore =>
                                         ConnectionCommandStore.deviceUniqueID == data.Split(';')[3]);
 
+                                if(temp != null)//verify if the device already has an connection on the list.
+                                {
                                     lostConnection = true; //derruba o cliente
 
                                     ClientWrite(stream, "uidit");//send UID is taken to device
                                     ConsoleWrite("Device {0} is tying to connect using an UID that is already taken.", true, me.clientIP);
                                 }
-                                catch (Exception)//if it has not, then accepts the connection.
+                                else//if it has not, then accepts the connection.
                                 {
                                     me.deviceName = data.Split(';')[1];
                                     me.deviceType = data.Split(';')[2];
@@ -377,7 +374,7 @@ namespace Domus
                                 //inserir dados no banco
                                 try
                                 {
-                                    //DatabaseHandler.InsertData(connectionString, deviceData);
+                                    DatabaseHandler.InsertData(connectionString, deviceData);
                                 }
                                 catch (Exception e)
                                 {
@@ -479,7 +476,7 @@ namespace Domus
                         while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
                         {
                             // Translate data bytes to a ASCII string.
-                            data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+                            data = Encoding.ASCII.GetString(bytes, 0, i);
 
                             if (rsa.OuterPublicKey != null)
                             {

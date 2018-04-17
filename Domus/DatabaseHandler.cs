@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+//Add MySql Library
 using MySql.Data.MySqlClient;
 
 namespace Domus
 {
     static class DatabaseHandler
     {
-        /*
         /// <summary>
         /// Gera a string de conexão.
         /// </summary>
@@ -23,10 +25,11 @@ namespace Domus
         }
 
         /// <summary>
-        /// Testa a conexão com o banco.
+        /// Testa a conexão do banco
         /// </summary>
         public static void TestConnection(string connectionString)
         {
+
             using (var conn = new MySqlConnection(connectionString))
             {
                 try
@@ -41,7 +44,45 @@ namespace Domus
         }
 
         /// <summary>
-        /// Insere um novo usuario no banco
+        /// Busca na base as informações do usuario para login
+        /// </summary>
+        public static User LoginRequest(string connectionString, string username)
+        {
+            User user = null;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM Users WHERE username = '" + username + "'";
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            dataReader.Read();
+                            user = MapUser(dataReader);
+                        }
+
+                        return user;
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
+        private static User MapUser(MySqlDataReader dataReader)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Insere um usuário no banco
         /// </summary>
         public static void InsertUser(string connectionString, User user)
         {
@@ -52,13 +93,14 @@ namespace Domus
                 try
                 {
                     conn.Open();
-                    cmd.CommandText = "INSERT INTO Users (user_name,user_passwd,email,user_score,firstname,lastname,position) values('" + user.userName +
-                                      "','" + user.passwd +
+                    cmd.CommandText = "INSERT INTO users (username,password,email,name,last_name,isAdmin,created_at,last_login) values('" + user.username +
+                                      "','" + user.password +
                                       "','" + user.email +
-                                      "'," + user.score +
-                                      ",'" + user.firstName +
+                                      "','" + user.name +
                                       "','" + user.lastName +
-                                      "','" + user.position + "')";
+                                      "'," + user.isAdmin +
+                                      ",'" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") +
+                                      "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "')";
 
                     cmd.ExecuteNonQuery();
                 }
@@ -71,278 +113,93 @@ namespace Domus
         }
 
         /// <summary>
-        /// Busca na base as informações do usuario para login
+        /// Insere um dispositivo no banco
         /// </summary>
-        public static List<User> LoginRequest(string connectionString, string username)
+        public static void InsertDevice(string connectionString, Device device)
         {
-            List<User> list = new List<User>();
-
             using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
             {
-                using (var cmd = conn.CreateCommand())
+                try
                 {
-                    try
-                    {
-                        conn.Open();
-                        cmd.CommandText = "SELECT * FROM Users WHERE user_name = '" + username + "'";
+                    conn.Open();
+                    cmd.CommandText = "INSERT INTO devices (deviceName,deviceId,deviceType,user_id,created_at,last_activity, data1_name, data2_name, data3_name, data4_name, data1_active, data2_active, data3_active, data4_active) values('" + device.deviceName +
+                                      "','" + device.deviceId +
+                                      "','" + device.deviceType +
+                                      "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") +
+                                      "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") +
+                                      "','" + device.data1_name +
+                                      "','" + device.data2_name +
+                                      "','" + device.data3_name +
+                                      "','" + device.data4_name +
+                                      "'," + device.data1_active +
+                                      "," + device.data2_active +
+                                      "," + device.data3_active +
+                                      "," + device.data4_active + ")";
 
-                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
-                        {
-                            while (dataReader.Read())
-                            {
-                                list.Add(MapUser(dataReader));
-                            }
-                        }
-
-                        return list;
-                    }
-                    catch (Exception e)
-                    {
-                        throw e;
-                    }
-
+                    cmd.ExecuteNonQuery();
                 }
+                catch (Exception e)
+                {
+                    throw e;
+                }
+
             }
         }
 
         /// <summary>
-        /// Retorna o tutorial referente ao Id informado
+        /// Insere um registro de dispositivo no banco de dados
         /// </summary>
-        public static Tutorial getTutorial(string connectionString, int tutorialId)
+        public static void InsertData(string connectionString, Data data)
         {
-            Tutorial tutorial;
-
             using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
             {
-                using (var cmd = conn.CreateCommand())
+                try
                 {
-                    try
-                    {
-                        conn.Open();
-                        cmd.CommandText = "SELECT * FROM Tutorials WHERE tutorial_id = " + tutorialId;
+                    conn.Open();
+                    cmd.CommandText = "INSERT INTO data (device_id,created_at,data1,data2,data3,data4) values('" + data.deviceId +
+                                      "','" + data.createdAt +
+                                      "','" + data.data1 +
+                                      "','" + data.data2 +
+                                      "','" + data.data3 +
+                                      "','" + data.data4 + "')";
 
-                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
-                        {
-                            dataReader.Read();
-
-                            tutorial = MapTutorial(dataReader);
-                        }
-
-                        return tutorial;
-                    }
-                    catch (Exception e)
-                    {
-                        throw e;
-                    }
-
+                    cmd.ExecuteNonQuery();
                 }
+                catch (Exception e)
+                {
+                    throw e;
+                }
+
             }
         }
 
-        /// <summary>
-        /// Retorna todos os tutoriais.
-        /// </summary>
-        public static List<Tutorial> getTutorials(string connectionString)
+        /*//Count statement
+        public int Count()
         {
-            List<Tutorial> list = new List<Tutorial>();
+            string query = "SELECT Count(*) FROM tableinfo";
+            int Count = -1;
 
-            using (var conn = new MySqlConnection(connectionString))
+            //Open Connection
+            if (this.OpenConnection() == true)
             {
-                using (var cmd = conn.CreateCommand())
-                {
-                    try
-                    {
-                        conn.Open();
-                        cmd.CommandText = "SELECT * FROM Tutorials";
+                //Create Mysql Command
+                MySqlCommand cmd = new MySqlCommand(query, connection);
 
-                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
-                        {
-                            while (dataReader.Read())
-                            {
-                                list.Add(MapTutorial(dataReader));
-                            }
-                        }
+                //ExecuteScalar will return one value
+                Count = int.Parse(cmd.ExecuteScalar() + "");
 
-                        return list;
-                    }
-                    catch (Exception e)
-                    {
-                        throw e;
-                    }
+                //close Connection
+                this.CloseConnection();
 
-                }
+                return Count;
             }
-        }
-
-        /// <summary>
-        /// Retorna o nivel referente ao Id informado
-        /// </summary>
-        public static Level getLevel(string connectionString, int levelId)
-        {
-            throw new Exception("Função não implementada");
-        }
-
-        /// <summary>
-        /// Retorna todos os niveis.
-        /// </summary>
-        public static List<Level> getLevels(string connectionString)
-        {
-            List<Level> list = new List<Level>();
-
-            using (var conn = new MySqlConnection(connectionString))
+            else
             {
-                using (var cmd = conn.CreateCommand())
-                {
-                    try
-                    {
-                        conn.Open();
-                        cmd.CommandText = "SELECT * FROM Levels";
-
-                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
-                        {
-                            while (dataReader.Read())
-                            {
-                                list.Add(MapLevel(dataReader));
-                            }
-                        }
-
-                        return list;
-                    }
-                    catch (Exception e)
-                    {
-                        throw e;
-                    }
-
-                }
+                return Count;
             }
-        }
-
-        /// <summary>
-        /// Retorna todos os niveis concluidos pelo usuario.
-        /// </summary>
-        public static List<UserCompletedLevel> getCompletedLevels(string connectionString, int userId)
-        {
-            List<UserCompletedLevel> list = new List<UserCompletedLevel>();
-
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                using (var cmd = conn.CreateCommand())
-                {
-                    try
-                    {
-                        conn.Open();
-                        cmd.CommandText = "SELECT * FROM UsersCompletedLevels WHERE user_id = " + userId;
-
-                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
-                        {
-                            while (dataReader.Read())
-                            {
-                                list.Add(MapCompletedLevel(dataReader));
-                            }
-                        }
-
-                        return list;
-                    }
-                    catch (Exception e)
-                    {
-                        throw e;
-                    }
-
-                }
-            }
-        }
-
-        /// <summary>
-        /// Mapeia o datareader para um User
-        /// </summary>
-        public static User MapUser(MySqlDataReader dataReader)
-        {
-            User temp = new User(
-                dataReader.GetInt32("user_id"),
-                dataReader.GetString("user_name"),
-                dataReader.GetString("user_passwd"),
-                dataReader.GetInt32("user_score"),
-                dataReader.GetString("firstname"),
-                dataReader.GetString("lastname"),
-                dataReader.GetString("position"),
-                dataReader.GetString("email"));
-
-            return temp;
-        }
-
-        /// <summary>
-        /// Mapeia o datareader para um Tutorial
-        /// </summary>
-        public static Tutorial MapTutorial(MySqlDataReader dataReader)
-        {
-            Tutorial temp = new Tutorial(
-                dataReader.GetInt32("tutorial_id"),
-                dataReader.GetString("tutorial_name"),
-                dataReader.GetString("tutorial_description"),
-                dataReader.GetString("tutorial_text"),
-                dataReader.GetInt32("prize_score"),
-                dataReader.GetInt32("level_id"));
-
-            return temp;
-        }
-
-        /// <summary>
-        /// Mapeia o datareader para um Level
-        /// </summary>
-        public static Level MapLevel(MySqlDataReader dataReader)
-        {
-            Level temp = new Level(
-                dataReader.GetInt32("level_id"),
-                dataReader.GetString("level_name"),
-                dataReader.GetString("level_description"),
-                dataReader.GetString("level_question"),
-                dataReader.GetString("level_answere"),
-                dataReader.GetInt32("prize_score"),
-                dataReader.GetInt32("score_needed"));
-
-            return temp;
-        }
-
-        /// <summary>
-        /// Mapeia o datareader para um UserCompletedLevel
-        /// </summary>
-        public static UserCompletedLevel MapCompletedLevel(MySqlDataReader dataReader)
-        {
-            UserCompletedLevel temp = new UserCompletedLevel(
-                dataReader.GetInt32("user_id"),
-                dataReader.GetBoolean("isLevel"),
-                dataReader.GetInt32("level_id"),
-                dataReader.GetString("answere"),
-                dataReader.GetBoolean("completed"));
-
-            return temp;
-        }
-
-           //Count statement
-             public int Count()
-             {
-                 string query = "SELECT Count(*) FROM tableinfo";
-                 int Count = -1;
-
-                 //Open Connection
-                 if (this.OpenConnection() == true)
-                 {
-                     //Create Mysql Command
-                     MySqlCommand cmd = new MySqlCommand(query, connection);
-
-                     //ExecuteScalar will return one value
-                     Count = int.Parse(cmd.ExecuteScalar() + "");
-
-                     //close Connection
-                     this.CloseConnection();
-
-                     return Count;
-                 }
-                 else
-                 {
-                     return Count;
-                 }
-         */
+         }*/
 
     }
 }

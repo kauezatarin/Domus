@@ -2,7 +2,7 @@
 
 namespace Domus
 {
-    class Data
+    public class Data
     {
         public Data()
         {

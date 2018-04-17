@@ -47,7 +47,7 @@ namespace Domus
 
         public string databasePassword { get; private set; } = "";
 
-        public string databaseName { get; private set; } = "iotserver";
+        public string databaseName { get; private set; } = "domus";
 
         private string banpath = @"bannedip";
 
@@ -97,7 +97,7 @@ namespace Domus
                     configWrite.WriteLine("databasePort: 3306");
                     configWrite.WriteLine("databaseUser: root");
                     configWrite.WriteLine("databasePassword: root");
-                    configWrite.WriteLine("databaseName: iotserver");
+                    configWrite.WriteLine("databaseName: domus");
                 }
 
             }

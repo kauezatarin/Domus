@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using RSACypher;
 
 namespace Domus
@@ -67,13 +68,13 @@ namespace Domus
 
                 // starts the listening loop. 
                 ConsoleWrite("Starting device listener on port {0}", true, config.deviceListeningPort);
-                deviceListener = new Thread(() => DeviceListener(deviceServer));
+                deviceListener = new Thread(() => DeviceListenerAsync(deviceServer));
                 deviceListener.Name = "Device Listener";
                 deviceListener.Start();
 
                 
                 ConsoleWrite("Starting client listener on port {0}", true, config.clientListeningPort);
-                clientListener = new Thread(() => ClientListener(clientServer));
+                clientListener = new Thread(() => ClientListenerAsync(clientServer));
                 clientListener.Name = "Client Listener";
                 clientListener.Start();
                 ConsoleWrite("Client connection length set to {0} with hash type {1}", true, config.RSAlength, config.HashTypeName());
@@ -159,7 +160,7 @@ namespace Domus
         }
 
         //thread responsavel por aguardar conexões de devices
-        private static void DeviceListener(TcpListener deviceServer)
+        private static async Task DeviceListenerAsync(TcpListener deviceServer)
         {
 
             // Start listening for client requests.
@@ -174,7 +175,8 @@ namespace Domus
                 // Perform a blocking call to accept requests. 
                 try
                 {
-                    TcpClient device = deviceServer.AcceptTcpClient();
+                    TcpClient device = null;
+                    device = await deviceServer.AcceptTcpClientAsync();
 
                     if (config.maxDevicesConnections > DeviceConnections.Count || config.maxDevicesConnections == -1)
                     {
@@ -204,7 +206,7 @@ namespace Domus
         }
         
         //thread responsavel por aguardar conexões de clientes
-        private static void ClientListener(TcpListener clientServer)
+        private static async Task ClientListenerAsync(TcpListener clientServer)
         {
 
             // Start listening for client requests.
@@ -220,7 +222,7 @@ namespace Domus
                 // You could also user server.AcceptSocket() here.
                 try
                 {
-                    TcpClient client = clientServer.AcceptTcpClient();
+                    TcpClient client = await clientServer.AcceptTcpClientAsync();
 
                     if (config.maxClientsConnections > ClientConnections.Count || config.maxClientsConnections == -1)
                     {

@@ -50,7 +50,7 @@ namespace Domus
                 //verifica se o banco de dados está ativo
                 try
                 {
-                    ConsoleWrite("Testing database connection on {0}:{1}", true, "localhost", config.databasePort);
+                    ConsoleWrite("Testing database connection on {0}:{1}", true, config.databaseIP, config.databasePort);
                     DatabaseHandler.TestConnection(connectionString);
                 }
                 catch (Exception e)

@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using MySql.Data.MySqlClient;
 using RSACypher;
 
 namespace Domus
@@ -54,9 +55,10 @@ namespace Domus
                     ConsoleWrite("Testing database connection on {0}:{1}", true, config.databaseIP, config.databasePort);
                     DatabaseHandler.TestConnection(connectionString);
                 }
-                catch (Exception e)
+                catch (MySqlException e)
                 {
-                    ConsoleWrite("Database connection Failure. {0}", true, e.Message);
+                    ConsoleWrite("Database connection Failure. {0} - {1}", true, e.Code, e.Message);
+                    ConsoleWrite("Press any key to exit.", false);
                     Console.Read();
                     return;
                 }

@@ -36,7 +36,7 @@ namespace Domus
                 {
                     conn.Open();
                 }
-                catch (Exception e)
+                catch (MySqlException e)
                 {
                     throw e;
                 }

@@ -34,6 +34,7 @@ namespace Domus
 
             try
             {
+                Console.Clear();
                 ConsoleWrite("Domus Server - Version: {0}", true, Assembly.GetExecutingAssembly().GetName().Version);
                 ConsoleWrite("To Exit press Ctrl + C.",false);
 

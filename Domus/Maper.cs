@@ -32,7 +32,7 @@ namespace Domus
         {
             Data temp = new Data(
                 dataReader.GetInt32("dataId"),
-                dataReader.GetString("deviceId"),
+                dataReader.GetString("device_id"),
                 dataReader.GetString("createdAt"),
                 dataReader.GetString("data1"),
                 dataReader.GetString("data2"),
@@ -52,7 +52,7 @@ namespace Domus
                 dataReader.GetString("deviceType"),
                 dataReader.GetString("createdAt"),
                 dataReader.GetString("lastActivity"),
-                dataReader.GetString("deviceId"),
+                dataReader.GetString("device_id"),
                 dataReader.GetBoolean("data1_active"),
                 dataReader.GetBoolean("data2_active"),
                 dataReader.GetBoolean("data3_active"),

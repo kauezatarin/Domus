@@ -123,7 +123,7 @@ namespace Domus
                 try
                 {
                     conn.Open();
-                    cmd.CommandText = "INSERT INTO devices (deviceName,deviceId,deviceType,user_id,created_at,last_activity, data1_name, data2_name, data3_name, data4_name, data1_active, data2_active, data3_active, data4_active) values('" + device.deviceName +
+                    cmd.CommandText = "INSERT INTO devices (deviceName,deviceId,deviceType,created_at,last_activity, data1_name, data2_name, data3_name, data4_name, data1_active, data2_active, data3_active, data4_active) values('" + device.deviceName +
                                       "','" + device.deviceId +
                                       "','" + device.deviceType +
                                       "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") +
@@ -158,7 +158,7 @@ namespace Domus
                 try
                 {
                     conn.Open();
-                    cmd.CommandText = "INSERT INTO data (device_id,created_at,data1,data2,data3,data4) values('" + data.deviceId +
+                    cmd.CommandText = "INSERT INTO data (device_id,created_at,data1,data2,data3,data4) values('" + data.device_id +
                                       "','" + data.createdAt +
                                       "','" + data.data1 +
                                       "','" + data.data2 +

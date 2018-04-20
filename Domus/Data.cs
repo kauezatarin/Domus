@@ -7,7 +7,7 @@ namespace Domus
         public Data()
         {
             this.dataId = -1;
-            this.deviceId = null;
+            this.device_id = null;
             this.createdAt = null;
             this.data1 = null;
             this.data2 = null;
@@ -15,10 +15,10 @@ namespace Domus
             this.data4 = null;
         }
 
-        public Data(int dataId, string deviceId, string createdAt, string data1, string data2, string data3, string data4)
+        public Data(int dataId, string device_id, string createdAt, string data1, string data2, string data3, string data4)
         {
             this.dataId = dataId;
-            this.deviceId = deviceId;
+            this.device_id = device_id;
             this.createdAt = createdAt;
             this.data1 = data1;
             this.data2 = data2;
@@ -29,7 +29,7 @@ namespace Domus
         public Data(int dataId, string deviceId)
         {
             this.dataId = dataId;
-            this.deviceId = deviceId;
+            this.device_id = deviceId;
             this.createdAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             this.data1 = null;
             this.data2 = null;
@@ -39,7 +39,7 @@ namespace Domus
 
         public int dataId { get; set; }
 
-        public string deviceId { get; set; }
+        public string device_id { get; set; }
 
         public string createdAt { get; set; }
 

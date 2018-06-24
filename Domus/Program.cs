@@ -329,7 +329,7 @@ namespace Domus
                                 else//if it has not, then accepts the connection.
                                 {
                                     me.deviceName = data.Split(';')[1];
-                                    me.deviceType = data.Split(';')[2];
+                                    me.deviceType = Convert.ToInt32(data.Split(';')[2]);
                                     me.dataDelay = (Convert.ToInt32(data.Split(';')[3]) * 10) + 100;//pega o tempo do delay e adicionar 10 segundos
                                     me.deviceUniqueID = data.Split(';')[4];
 

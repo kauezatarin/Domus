@@ -1,4 +1,15 @@
-===============LEGENDA=================
+===============COMANDOS================
+
+-----------------REDE------------------
+ayt --> envia a resposta 'imhr' para sinalizar ao servidor que a conexão não caiu. (Recebido quando o servidor não receber dados ao atingir o delaytime)
+SendInfos --> envia os dados do sispositivo ao servidor. (Recebido quando o servidor solicita a identidade do dispositivo)
+uidit--> aguarda 60 segundos e tenta uma nova conexão. (Recebido do servidor quando já existe uma conexão ativa com o memso UID)
+shutdown --> encerra a conexão e aguarda 240 segundos até uma nova tentativa de reconexão, após isso as tentativas passam a ser no tempo definido em DATA_DELAY. (Recebido quando o servidor inicia o processo de desligamento)
+changeTimer t --> altera o intevalo entre os envios dos dados para o tempo 't' definido pelo servidor. (Recebido quando o delay padrão do dispositivo excede o delay minimo aceito pelo servidor)
+---------------------------------------
+----------------SERIAL-----------------
+
+---------------------------------------
 
 =======================================
 
@@ -7,5 +18,14 @@
 
 byte 0 --> controle de primeira inicialização, caso não seja a primeira estará como 'c'.
 
-byte 1 a 33 --> chave unica do dispositivo. Contem 32 bytes e vem nula por padrão.
+byte 1 a 4 --> endereço de IP do servidor.
+byte 5 --> porta de conexão com o servidor.
+
+byte 6 --> flag que determina se o dispositivo tem ip fixo ou utilizará o DHCP. (1 - ativo 0 - inativo)
+byte 7 a 10 --> endereço de IP do dispositivo. (utilizado apenas se o DHCP estiver sesativado)
+byte 11 a 16 --> endereço MAC do dispositivo. (deve ser unico para cada dispositivo)
+
+byte 17 a 49 --> chave unica do dispositivo. Contem 32 bytes, nula por padrão e deve ser definida na primeira configuração.
+byte 50 a 81 --> nome do dispositivo. (Máximo de 30 caracteres)
+
 

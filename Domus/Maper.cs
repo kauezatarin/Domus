@@ -49,7 +49,7 @@ namespace Domus
         {
             Device temp = new Device(
                 dataReader.GetString("deviceName"),
-                dataReader.GetString("deviceType"),
+                dataReader.GetInt32("deviceType"),
                 dataReader.GetString("createdAt"),
                 dataReader.GetString("lastActivity"),
                 dataReader.GetString("device_id"),

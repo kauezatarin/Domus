@@ -9,7 +9,7 @@ namespace Domus
             conexao = client;
             command = null;
             clientIP = null;
-            deviceType = null;
+            deviceType = -1;
             deviceName = null;
             dataDelay = 30;
         }
@@ -19,7 +19,7 @@ namespace Domus
             conexao = null;
             command = null;
             clientIP = null;
-            deviceType = null;
+            deviceType = -1;
             deviceName = null;
             dataDelay = 30;
         }
@@ -32,7 +32,7 @@ namespace Domus
 
         public string deviceName { get; set; }
 
-        public string deviceType { get; set; }
+        public int deviceType { get; set; }
 
         public int dataDelay { get; set; }
 

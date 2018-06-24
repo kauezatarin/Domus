@@ -6,7 +6,7 @@ namespace Domus
 {
     public class Device
     {
-        public Device(string deviceName, string deviceType, string createdAt, string lastActivity, string deviceId = null, bool data1_active = false, bool data2_active = false, bool data3_active = false, bool data4_active = false, string data1_name = " ", string data2_name = " ", string data3_name = " ", string data4_name = " ")
+        public Device(string deviceName, int deviceType, string createdAt, string lastActivity, string deviceId = null, bool data1_active = false, bool data2_active = false, bool data3_active = false, bool data4_active = false, string data1_name = " ", string data2_name = " ", string data3_name = " ", string data4_name = " ")
         {
             this.deviceId = deviceId;
             this.deviceName = deviceName;
@@ -27,7 +27,7 @@ namespace Domus
 
         public string deviceName { get; set; }
 
-        public string deviceType { get; set; }
+        public int deviceType { get; set; }
 
         public string createdAt { get; set; }
 

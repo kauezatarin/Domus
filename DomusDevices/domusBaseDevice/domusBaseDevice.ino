@@ -8,16 +8,19 @@
 #define DHTTYPE DHT11 // DHT 11
 
 #define DEVICE_NAME "Casa" //nome do dispositivo
-#define DEVICE_TIPE "weather" //tipo de dispositivo
+#define DEVICE_TIPE 1 //tipo de dispositivo
 #define DATA_DELAY 30 //preserva o deay original para restauração futura
 
 char DEVICE_UNIQUE_ID[33] = "698dc19d489c4e4db73e28a713eab07b"; //id unico do device vinculado a sua conta
 
-byte mac[] = {
+// pode ser convertido para bytes em decimal
+byte mac[6] = {
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
 };
-IPAddress ip(192, 168, 1, 50);
-IPAddress servidor(192, 168, 1, 41);
+
+bool isDHCP = true;
+IPAddress ip = IPAddress(192, 168, 1, 50);
+IPAddress servidor = IPAddress(192, 168, 1, 41);
 
 int connectionPort = 9595;
 
@@ -33,17 +36,28 @@ String inData = String(100);
 String outData = String(100);
 char c;
 
-//sensor var
+//sensor de humidade e temperatura
 DHT dht(DHTPIN, DHTTYPE);
 float temperatura;
 float humidade;
 
 void setup() {
-  // initialize the Ethernet device
+  
   Serial.begin(9600);
-  //Ethernet.begin(mac, ip, myDns, gateway, subnet);
-  Ethernet.begin(mac); //get ip by DHCP
 
+  
+  
+  //inicializa a placa de rede
+  if(isDHCP)
+  {
+    Ethernet.begin(mac); //pega um IP via DHCP
+  }
+  else
+  {
+    //Ethernet.begin(mac, ip, myDns, gateway, subnet);
+    Ethernet.begin(mac, ip);
+  }
+  
   dht.begin();
 }
 
@@ -103,6 +117,7 @@ void loop() {
   }
 }
 
+//tenta se conectar ao servidor
 bool tryConnection()
 {
   Serial.println("connecting...");
@@ -119,6 +134,7 @@ bool tryConnection()
   }
 }
 
+//executa os comandos recebidos
 void executeCommand(String command)
 {
   if(command == "ayt")//responde ao servidor para informar que a conexão não caiu
@@ -141,7 +157,7 @@ void executeCommand(String command)
     Serial.print("Identificação realizada: ");
     Serial.println(outData);
   }
-  else if(command == "uidit")//á existe um dispositivo com esse UID conectado
+  else if(command == "uidit")//já existe um dispositivo com esse UID conectado
   {
     Serial.println("Uid já esta sendo usado. Tente novamente em 60 segundos. Isto pode ser causado por queda de conexão.");
     client.stop();
@@ -167,6 +183,20 @@ void executeCommand(String command)
     
     Serial.println(command);
   }
+}
+
+//carrega todas as configurações
+void loadConfigs()
+{
+  
+}
+
+//salva todas as configurações na memoria
+void EEPROM_save()
+{
+  EEPROM.update(0,'c'); //atualiza a flag caso seja a primeira configuração
+  
+  //EEPROM.
 }
 
 //carrega da memoria o id unico do dispositivo

@@ -1,0 +1,11 @@
+===============LEGENDA=================
+
+=======================================
+
+
+========ENDEREÇAMENTO DE MEMORIA=======
+
+byte 0 --> controle de primeira inicialização, caso não seja a primeira estará como 'c'.
+
+byte 1 a 33 --> chave unica do dispositivo. Contem 32 bytes e vem nula por padrão.
+

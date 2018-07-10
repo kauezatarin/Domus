@@ -71,13 +71,17 @@ namespace Domus
 
                 // starts the listening loop. 
                 ConsoleWrite("Starting device listener on port {0}", true, config.deviceListeningPort);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 deviceListener = new Thread(() => DeviceListenerAsync(deviceServer));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 deviceListener.Name = "Device Listener";
                 deviceListener.Start();
 
                 
                 ConsoleWrite("Starting client listener on port {0}", true, config.clientListeningPort);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 clientListener = new Thread(() => ClientListenerAsync(clientServer));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 clientListener.Name = "Client Listener";
                 clientListener.Start();
                 ConsoleWrite("Client connection length set to {0} with hash type {1}", true, config.RSAlength, config.HashTypeName());

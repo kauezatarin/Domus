@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <Platforms>AnyCPU;x64;arm</Platforms>
 	<RuntimeIdentifiers>win10-x64;win8-arm;linux-arm;ubuntu.16.04-arm</RuntimeIdentifiers>
     <ApplicationIcon>Dome.ico</ApplicationIcon>
@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MySql.Data" Version="6.10.6" />
+    <PackageReference Include="MySql.Data" Version="8.0.11" />
   </ItemGroup>
 
   <ItemGroup>

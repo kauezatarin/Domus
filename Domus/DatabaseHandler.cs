@@ -19,7 +19,8 @@ namespace Domus
                 "PORT=" + databasePort + ";" +
                 "DATABASE=" + databaseName + ";" +
                 "UID=" + databaseUser + ";" +
-                "PASSWORD=" + databasePassword + ";";
+                "PASSWORD=" + databasePassword + ";" +
+                "SslMode = none";
 
             return connectionString;
         }

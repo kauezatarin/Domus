@@ -63,7 +63,7 @@ namespace Domus
                         using (MySqlDataReader dataReader = cmd.ExecuteReader())
                         {
                             dataReader.Read();
-                            user = MapUser(dataReader);
+                            user = Maper.MapUser(dataReader);
                         }
 
                         return user;
@@ -75,11 +75,6 @@ namespace Domus
 
                 }
             }
-        }
-
-        private static User MapUser(MySqlDataReader dataReader)
-        {
-            throw new NotImplementedException();
         }
 
         /// <summary>

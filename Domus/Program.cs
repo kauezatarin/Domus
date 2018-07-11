@@ -671,37 +671,50 @@ namespace Domus
             {
 
                 int DevicesInMemory = DeviceConnections.Count();
+                int ClientsInMemory = ClientConnections.Count();
                 ConnectionCommandStore temp;
 
                 //remove as conexões de devices encerradas da lista
                 for (int i = 0; i < DevicesInMemory; i++)
                 {
-                    temp = DeviceConnections.Take();
-
-                    if (temp.conexao.IsAlive)
+                    if (!DeviceConnections.TryTake(out temp))
                     {
-                        DeviceConnections.Add(temp);
+                        ConsoleWrite("Não foi possivel limpar a fila de dispositivos. ({0})",true,DevicesInMemory);
                     }
                     else
                     {
-                        temp = null;
+                        if (temp.conexao.IsAlive)
+                        {
+                            DeviceConnections.Add(temp);
+                        }
+                        else
+                        {
+                            temp = null;
+                        }
                     }
                 }
 
                 //remove as conexões de clientes encerradas da lista
-                for (int i = 0; i < DevicesInMemory; i++)
+                for (int i = 0; i < ClientsInMemory; i++)
                 {
-                    temp = ClientConnections.Take();
-
-                    if (temp.conexao.IsAlive)
+                    if (!ClientConnections.TryTake(out temp))
                     {
-                        ClientConnections.Add(temp);
+                        ConsoleWrite("Não foi possivel limpar a fila de clientes. ({0})", true, ClientsInMemory);
                     }
                     else
                     {
-                        temp = null;
+                        if (temp.conexao.IsAlive)
+                        {
+                            ClientConnections.Add(temp);
+                        }
+                        else
+                        {
+                            temp = null;
+                        }
                     }
                 }
+
+                //ConsoleWrite("Limpou -- Devices Ativos: {0} -- Devices Removidos: {1}", true, DeviceConnections.Count, DevicesInMemory - DeviceConnections.Count);
 
                 if (!desligar)//se estiver desligando pula o timer
                     Thread.Sleep(30000);

@@ -323,7 +323,6 @@ namespace Domus
             //thread that writes on the log
             while (!stopWorkers || !logEntries.IsEmpty)
             {
-                Thread.Sleep(100);
                 if (!logEntries.IsEmpty)
                 {
                     using (StreamWriter logWrite = File.AppendText(logpath))
@@ -339,6 +338,10 @@ namespace Domus
                             Console.WriteLine("LOGWORKER EXCEPTION: " + e.Message);
                         }
                     }
+                }
+                else
+                {
+                    Thread.Sleep(100);
                 }
             }
         }

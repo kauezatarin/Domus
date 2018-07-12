@@ -19,6 +19,7 @@ namespace Domus
         private static BlockingCollection<ConnectionCommandStore> DeviceConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static BlockingCollection<ConnectionCommandStore> ClientConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static ConfigHandler config = new ConfigHandler();
+        private static LogHandler logger = new LogHandler(config);
         private static string connectionString;
 
         static void Main(string[] args)
@@ -118,7 +119,7 @@ namespace Domus
 
                 ConsoleWrite("Server Stoped.", true);
 
-                config.stopWorkers = true;
+                logger.stopWorkers = true;
 
             }
 
@@ -634,16 +635,9 @@ namespace Domus
 
             Console.WriteLine(message, args);
 
-            if ((config.logEnabled && logThis) || config.forceLog)
+            if (logThis || config.forceLog)
             {
-                if (config.maxLogSize != -1 && config.GetLogSize() >= config.maxLogSize)
-                {
-                    config.AddLog("Log is full.");
-                    config.DisableLog();
-                    ConsoleWrite("Log File is full!!!", false);
-                }
-                else
-                    config.AddLog(message, args);
+                logger.AddLog(message, args);
             }
 
         }

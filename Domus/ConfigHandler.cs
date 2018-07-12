@@ -95,7 +95,7 @@ namespace Domus
                     configWrite.WriteLine("databaseUser: root");
                     configWrite.WriteLine("databasePassword: root");
                     configWrite.WriteLine("databaseName: domus");
-                    configWrite.WriteLine("#Forecast service configuratiosn. Obtain a API Key at: https://home.openweathermap.org");
+                    configWrite.WriteLine(configWrite.NewLine + "#Forecast service configuratiosn. Obtain a API Key at: https://home.openweathermap.org");
                     configWrite.WriteLine("cityName: piracicaba");
                     configWrite.WriteLine("countryId: br");
                     configWrite.WriteLine("weatherApiKey: API_KEY");

@@ -321,7 +321,7 @@ namespace Domus
             string temp;
 
             //thread that writes on the log
-            while (!stopWorkers)
+            while (!stopWorkers || !logEntries.IsEmpty)
             {
                 Thread.Sleep(100);
                 if (!logEntries.IsEmpty)

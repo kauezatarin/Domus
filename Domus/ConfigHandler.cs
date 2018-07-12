@@ -9,13 +9,7 @@ namespace Domus
 {
     class ConfigHandler
     {
-        private Thread logWorker;
-
-        protected static ConcurrentQueue<string> logEntries = new ConcurrentQueue<string>();
-
         public BlockingCollection<string> bannedIPs = new BlockingCollection<string>();
-
-        public bool stopWorkers { get; set; } = false;
 
         public int maxClientsConnections { get; private set; } = -1;
 
@@ -32,8 +26,6 @@ namespace Domus
         public bool forceLog { get; private set; } = false;
 
         public int maxLogSize { get; private set; } = 200;
-
-        public string fullLogAction { get; private set; } = "stop";
 
         public int RSAlength { get; private set; } = 1024;
 
@@ -91,7 +83,6 @@ namespace Domus
                     configWrite.WriteLine("logEnabled: true");
                     configWrite.WriteLine("forceLog: false");
                     configWrite.WriteLine("maxLogSize: 200");
-                    configWrite.WriteLine("fullLogAction: stop");
                     configWrite.WriteLine(configWrite.NewLine + "#Database settings:");
                     configWrite.WriteLine("databaseIP: localhost");
                     configWrite.WriteLine("databasePort: 3306");
@@ -103,26 +94,6 @@ namespace Domus
             }
 
             LoadConfigs();//must be before log creation
-
-            if (logEnabled)
-            {
-                if (!File.Exists(logpath))
-                {
-                    using (StreamWriter logWrite = File.CreateText(logpath))
-                    {
-                        AddLog("Log initiated!");
-                    }
-                }
-                else
-                {
-                    AddLog("Log initiated!");
-                }
-
-                logWorker = new Thread(() => LogWorker());
-                logWorker.Name = "Log Worker";
-                logWorker.Start();
-
-            }
 
         }
 
@@ -179,7 +150,7 @@ namespace Domus
 
                         if (RSAlength < 1024 || RSAlength > 16384)
                         {
-                            AddLog("RSA lenght can't be less than 1024 or higher than 16384 (2048 recommended). Using recommended value.");
+                            Console.WriteLine("RSA lenght can't be less than 1024 or higher than 16384 (2048 recommended). Using recommended value.");
 
                             RSAlength = 2048;
                         }
@@ -190,7 +161,7 @@ namespace Domus
 
                         if (RSAHashType > 2 || RSAHashType < 0)
                         {
-                            AddLog("The log type " + RSAHashType + " does not exists. Has type set to 0 (SHA1).");
+                            Console.WriteLine("The log type " + RSAHashType + " does not exists. Has type set to 0 (SHA1).");
 
                             RSAHashType = 0;
                         }
@@ -206,10 +177,6 @@ namespace Domus
                     else if (line.Contains("maxLogSize"))
                     {
                         maxLogSize = Convert.ToInt32(line.Split(':')[1].Trim(' '));
-                    }
-                    else if (line.Contains("fullLogAction"))
-                    {
-                        fullLogAction = line.Split(':')[1].Trim(' ');
                     }
                     else if (line.Contains("databaseIP"))
                     {
@@ -280,82 +247,21 @@ namespace Domus
             SaveBannedIPs();
         }
 
-        public double GetLogSize(bool inKbytes = false)
-        {
-            double fileSizeInBytes = new FileInfo(logpath).Length;
-
-            if (!inKbytes)//retorna o tamanho em MB
-            {
-                return fileSizeInBytes / 1024 / 1024;
-            }
-            else
-            {
-                return fileSizeInBytes / 1024;//retorna em bytes
-            }
-
-        }
-
-        public void AddLog(string registry, params object[] args)
-        {
-            if (logEnabled)
-            {
-                for (int i = 0; i < args.Length; i++)
-                {
-                    try
-                    {
-                        registry = registry.Replace("{" + i + "}", args[i].ToString());
-                    }
-                    catch (Exception)
-                    {
-                        registry = registry.Replace("{" + i + "}", "NULL");
-                    }
-                }
-
-                registry = DateTime.Now.ToString(new CultureInfo("pt-BR")) + " - " + registry;
-                logEntries.Enqueue(registry);
-            }
-        }
-
-        public void LogWorker()
-        {
-            string temp;
-
-            //thread that writes on the log
-            while (!stopWorkers || !logEntries.IsEmpty)
-            {
-                if (!logEntries.IsEmpty)
-                {
-                    using (StreamWriter logWrite = File.AppendText(logpath))
-                    {
-                        try
-                        {
-                            logEntries.TryDequeue(out temp);//gets the first element of the queue.
-
-                            logWrite.WriteLine(temp);
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine("LOGWORKER EXCEPTION: " + e.Message);
-                        }
-                    }
-                }
-                else
-                {
-                    Thread.Sleep(100);
-                }
-            }
-        }
-
-        public void DisableLog()
-        {
-            logEnabled = false;
-        }
-
         public string HashTypeName()
         {
             string[] name = new[] { "SHA1", "SHA256", "SHA512" };
 
             return name[RSAHashType];
+        }
+
+        public string GetLogPath()
+        {
+            return logpath;
+        }
+
+        public void DisableLog()
+        {
+            logEnabled = false;
         }
     }
 }

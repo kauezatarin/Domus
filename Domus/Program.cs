@@ -33,6 +33,14 @@ namespace Domus
 
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
 
+            WeatherHandler Weather = new WeatherHandler("Piracicaba", "br");
+            Weather.CheckWeather();
+            System.Console.WriteLine(Weather.Temperature);
+
+            Console.Read();
+
+            return;
+
             try
             {
                 Console.Clear();

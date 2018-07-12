@@ -9,7 +9,9 @@ namespace Domus
     /* USO:
        WeatherHandler Weather = new WeatherHandler("Piracicaba", "br");
        Weather.CheckWeather();
-       System.Console.WriteLine(Weather.Temp);
+       System.Console.WriteLine(Weather.Temperature);
+
+        https://openweathermap.org/weather-data
      
      */
 
@@ -25,45 +27,40 @@ namespace Domus
 
         public string Country { get; private set; }
 
-        public float Temp { get; private set; }
+        public float Temperature { get; private set; }
 
-        public float TempMax { get; private set; }
+        public float TemperatureMax { get; private set; }
 
-        public float TempMin { get; private set; }
+        public float TemperatureMin { get; private set; }
 
         public void CheckWeather()
         {
             WeatherAPI DataAPI = new WeatherAPI(City + "," + Country);
-            Temp = DataAPI.GetTemp();
+            DataAPI.GetForecast();
         }
     }
 
     class WeatherAPI
     {
+        private const string APIKEY = "8e7b8c6d4be9320c424740f01c772211";
+        private string CurrentURL;
+        private XmlDocument xmlDocument;
+
         public WeatherAPI(string location)
         {
             SetCurrentURL(location);
             xmlDocument = GetXML(CurrentURL);
         }
 
-        private const string APIKEY = "8e7b8c6d4be9320c424740f01c772211";
-        private string CurrentURL;
-        private XmlDocument xmlDocument;
-
-        public float GetTemp()
-        {
-            XmlNode temp_node = xmlDocument.SelectSingleNode("//temperature");
-            XmlAttribute temp_value = temp_node.Attributes["value"];
-            string temp_string = temp_value.Value;
-            return float.Parse(temp_string);
-        }
-
         // trocar para : http://api.openweathermap.org/data/2.5/forecast?q=Piracicaba,br&mode=xml&lang=pt&units=metric&APPID=8e7b8c6d4be9320c424740f01c772211
-
         private void SetCurrentURL(string location)
         {
-            CurrentURL = "http://api.openweathermap.org/data/2.5/weather?q="
-                         + location + "&mode=xml&units=metric&APPID=" + APIKEY;
+            /*CurrentURL = "http://api.openweathermap.org/data/2.5/weather?q="
+                         + location + "&mode=xml&units=metric&APPID=" + APIKEY;*/
+
+            CurrentURL = "http://api.openweathermap.org/data/2.5/forecast?q="
+                         + location + "&mode=xml&lang=pt&units=metric&APPID=" + APIKEY;
+
         }
 
         private XmlDocument GetXML(string CurrentURL)
@@ -76,5 +73,30 @@ namespace Domus
                 return xmlDocument;
             }
         }
+
+        public Forecast GetForecast()
+        {
+            Forecast temp_forecast = new Forecast();
+
+            List<string> locationData = getLocationData();
+
+
+            return temp_forecast;
+        }
+
+        private List<string> getLocationData()
+        {
+            List<string> temp = new List<string>();
+
+            temp.Add(xmlDocument.SelectSingleNode("//location//name").FirstChild.Value);//resgata o nome da cidade
+            temp.Add(xmlDocument.SelectSingleNode("//location//country").FirstChild.Value);//resgata o nome do país
+
+            temp.Add(xmlDocument.SelectSingleNode("//location//location").Attributes["latitude"].Value);//resgata a latitude da localização
+            temp.Add(xmlDocument.SelectSingleNode("//location//location").Attributes["longitude"].Value);//resgata a longitude da localização
+
+            return temp;
+        }
+
+        
     }
 }

@@ -41,6 +41,12 @@ namespace Domus
 
         public string databaseName { get; private set; } = "domus";
 
+        public string cityName { get; private set; } = "piracicaba";
+
+        public string countryId { get; private set; } = "br";
+
+        public string weatherApiKey { get; private set; } = "API_KEY";
+
         private string banpath = @"bannedip";
 
         private string configpath = @"serverConf";
@@ -89,6 +95,10 @@ namespace Domus
                     configWrite.WriteLine("databaseUser: root");
                     configWrite.WriteLine("databasePassword: root");
                     configWrite.WriteLine("databaseName: domus");
+                    configWrite.WriteLine(configWrite.NewLine + "#Forecast service configuratiosn. Obtain a API Key at: https://home.openweathermap.org");
+                    configWrite.WriteLine("cityName: piracicaba");
+                    configWrite.WriteLine("countryId: br");
+                    configWrite.WriteLine("weatherApiKey: API_KEY");
                 }
 
             }
@@ -197,6 +207,18 @@ namespace Domus
                     else if (line.Contains("databaseName"))
                     {
                         databaseName = line.Split(':')[1].Trim(' ');
+                    }
+                    else if (line.Contains("cityName"))
+                    {
+                        cityName = line.Split(':')[1].Trim(' ');
+                    }
+                    else if (line.Contains("countryId"))
+                    {
+                        countryId = line.Split(':')[1].Trim(' ');
+                    }
+                    else if (line.Contains("weatherApiKey"))
+                    {
+                        weatherApiKey = line.Split(':')[1].Trim(' ');
                     }
                 }
             }

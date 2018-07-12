@@ -21,6 +21,8 @@ namespace Domus
         private static ConfigHandler config = new ConfigHandler();
         private static LogHandler logger = new LogHandler(config);
         private static string connectionString;
+        private static WeatherHandler Weather;
+        private static Forecast forecast;
 
         static void Main(string[] args)
         {
@@ -30,6 +32,7 @@ namespace Domus
             Thread clientListener = null;
             Thread connectionCleaner = null;
             connectionString = DatabaseHandler.CreateConnectionString(config.databaseIP, config.databasePort, config.databaseName, config.databaseUser, config.databasePassword);
+            Weather = new WeatherHandler(config.cityName, config.countryId, config.weatherApiKey);// adicionar os parametros na configuração
 
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
 
@@ -40,12 +43,13 @@ namespace Domus
                 ConsoleWrite("To Exit press Ctrl + C.",false);
 
                 //cria a conexão
+                ConsoleWrite("Creating listeners", true);
                 deviceServer = Connect(config.deviceListeningPort);
                 clientServer = Connect(config.clientListeningPort);
                 
                 if (deviceServer == null || clientServer == null)//se falhar sai do programa
                 {
-                    ConsoleWrite("Fail to start listeners.",true);
+                    ConsoleWrite("Fail to create listeners.",true);
                     
                     Console.Read();
                     return;
@@ -63,6 +67,21 @@ namespace Domus
                     ConsoleWrite("Press any key to exit.", false);
                     Console.Read();
                     return;
+                }
+
+                //Tenta resgatar a previsão do tempo
+                ConsoleWrite("Acquiring forecast informations", true);
+
+                try
+                {
+                    forecast = Weather.CheckWeather();
+
+                    ConsoleWrite("Successfully acquired forecasts for {0},{1} ({2};{3}) ", true, forecast.Location_Name,
+                        forecast.Location_Country, forecast.Location_Latitude, forecast.Location_Longitude);
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Fail to acquire forecast informations for {0},{1} ==> {2}", true, config.cityName, config.countryId, e.Message);
                 }
 
                 connectionCleaner = new Thread(() => ClearConnectionList());

@@ -54,6 +54,20 @@ namespace Domus
                     Console.Read();
                     return;
                 }
+                
+                //verifica se o banco de dados está ativo
+                try
+                {
+                    ConsoleWrite("Testing database connection on {0}:{1}", true, config.databaseIP, config.databasePort);
+                    DatabaseHandler.TestConnection(connectionString);
+                }
+                catch (MySqlException e)
+                {
+                    ConsoleWrite("Database connection Failure. {0} - {1}", true, e.Code, e.Message);
+                    ConsoleWrite("Press any key to exit.", false);
+                    Console.Read();
+                    return;
+                }
 
                 //Tenta resgatar a previsão do tempo
                 ConsoleWrite("Acquiring forecast informations", true);
@@ -68,20 +82,6 @@ namespace Domus
                 catch (Exception e)
                 {
                     ConsoleWrite("Fail to acquire forecast informations for {0},{1} ==> {2}", true, config.cityName, config.countryId, e.Message);
-                }
-              
-                //verifica se o banco de dados está ativo
-                try
-                {
-                    ConsoleWrite("Testing database connection on {0}:{1}", true, config.databaseIP, config.databasePort);
-                    DatabaseHandler.TestConnection(connectionString);
-                }
-                catch (MySqlException e)
-                {
-                    ConsoleWrite("Database connection Failure. {0} - {1}", true, e.Code, e.Message);
-                    ConsoleWrite("Press any key to exit.", false);
-                    Console.Read();
-                    return;
                 }
 
                 connectionCleaner = new Thread(() => ClearConnectionList());

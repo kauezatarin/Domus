@@ -32,7 +32,18 @@ namespace Domus
             Forecasts = forecasts;
         }
 
-        public Forecast() { }
+        public Forecast(List<string> locationData, List<DateTime> sunData, List<ForecastData> forecastDatas)
+        {
+            Location_Name = locationData[0];
+            Location_Country = locationData[1];
+            Location_Latitude = locationData[2];
+            Location_Longitude = locationData[3];
+
+            Sun_Rise = sunData[0];
+            Sun_Set = sunData[1];
+
+            Forecasts = forecastDatas;
+        }
 
     }
 }

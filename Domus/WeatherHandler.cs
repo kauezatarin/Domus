@@ -17,47 +17,53 @@ namespace Domus
 
     class WeatherHandler
     {
-        public WeatherHandler(string City, string Country)
+        public WeatherHandler(string City, string Country, string apiKey)
         {
             this.City = City;
             this.Country = Country;
+            this.APIKey = apiKey;
         }
 
         public string City { get; private set; }
 
         public string Country { get; private set; }
 
-        public float Temperature { get; private set; }
+        private string APIKey { get; set; }
 
-        public float TemperatureMax { get; private set; }
-
-        public float TemperatureMin { get; private set; }
-
-        public void CheckWeather()
+        public Forecast CheckWeather()
         {
-            WeatherAPI DataAPI = new WeatherAPI(City + "," + Country);
-            DataAPI.GetForecast();
+            Forecast forecast = null;
+
+            try
+            {
+                WeatherAPI DataAPI = new WeatherAPI(City + "," + Country, APIKey);
+
+                forecast = DataAPI.GetForecast();
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+
+            return forecast;
         }
     }
 
     class WeatherAPI
     {
-        private const string APIKEY = "8e7b8c6d4be9320c424740f01c772211";
+        private static string APIKEY;
         private string CurrentURL;
         private XmlDocument xmlDocument;
 
-        public WeatherAPI(string location)
+        public WeatherAPI(string location, string apiKey)
         {
+            APIKEY = apiKey;
             SetCurrentURL(location);
             xmlDocument = GetXML(CurrentURL);
         }
 
-        // trocar para : http://api.openweathermap.org/data/2.5/forecast?q=Piracicaba,br&mode=xml&lang=pt&units=metric&APPID=8e7b8c6d4be9320c424740f01c772211
         private void SetCurrentURL(string location)
         {
-            /*CurrentURL = "http://api.openweathermap.org/data/2.5/weather?q="
-                         + location + "&mode=xml&units=metric&APPID=" + APIKEY;*/
-
             CurrentURL = "http://api.openweathermap.org/data/2.5/forecast?q="
                          + location + "&mode=xml&lang=pt&units=metric&APPID=" + APIKEY;
 
@@ -76,27 +82,85 @@ namespace Domus
 
         public Forecast GetForecast()
         {
-            Forecast temp_forecast = new Forecast();
-
             List<string> locationData = getLocationData();
+            List<DateTime> sunData = getSunData();
+            List<ForecastData> forecastDatas = getForecastDatas();
 
-
-            return temp_forecast;
+            return new Forecast(locationData,sunData,forecastDatas);
         }
 
         private List<string> getLocationData()
         {
-            List<string> temp = new List<string>();
+            List<string> data = new List<string>();
 
-            temp.Add(xmlDocument.SelectSingleNode("//location//name").FirstChild.Value);//resgata o nome da cidade
-            temp.Add(xmlDocument.SelectSingleNode("//location//country").FirstChild.Value);//resgata o nome do país
+            data.Add(xmlDocument.SelectSingleNode("//location//name").FirstChild.Value);//resgata o nome da cidade
+            data.Add(xmlDocument.SelectSingleNode("//location//country").FirstChild.Value);//resgata o nome do país
 
-            temp.Add(xmlDocument.SelectSingleNode("//location//location").Attributes["latitude"].Value);//resgata a latitude da localização
-            temp.Add(xmlDocument.SelectSingleNode("//location//location").Attributes["longitude"].Value);//resgata a longitude da localização
+            data.Add(xmlDocument.SelectSingleNode("//location//location").Attributes["latitude"].Value);//resgata a latitude da localização
+            data.Add(xmlDocument.SelectSingleNode("//location//location").Attributes["longitude"].Value);//resgata a longitude da localização
 
-            return temp;
+            return data;
         }
 
-        
+        private List<DateTime> getSunData()
+        {
+            List<DateTime> data = new List<DateTime>();
+
+            data.Add(GenerateDatetime(xmlDocument.SelectSingleNode("//sun").Attributes["rise"].Value));//resgata a latitude da localização
+            data.Add(GenerateDatetime(xmlDocument.SelectSingleNode("//sun").Attributes["set"].Value));//resgata a longitude da localização
+
+            return data;
+        }
+
+        private List<ForecastData> getForecastDatas()
+        {
+            List<ForecastData> data = new List<ForecastData>();
+            XmlNodeList nodes = xmlDocument.SelectSingleNode("//forecast").ChildNodes;
+
+            string fromData;
+            string toData;
+            string value;
+            string type;
+            
+            foreach (XmlNode node in nodes)
+            {
+                fromData = node.Attributes["from"].Value;
+                toData = node.Attributes["to"].Value;
+
+                XmlNodeList tempnodes = node.ChildNodes;
+
+                if(tempnodes[1].Attributes.Count > 0)
+                {
+                    value = tempnodes[1].Attributes["value"].Value.Replace(".", ",");
+                    type = tempnodes[1].Attributes["type"].Value;
+                }
+                else
+                {
+                    value = "-1";
+                    type = "none";
+                }
+
+                data.Add(new ForecastData(GenerateDatetime(fromData),GenerateDatetime(toData), Convert.ToSingle(value), type));
+            }
+
+
+            return data;
+        }
+
+        private DateTime GenerateDatetime(string dataString, bool returnGMT = false)
+        {
+            string[] dateTime = dataString.Split("T");
+            string[] date = dateTime[0].Split("-");
+            string[] time = dateTime[1].Split(":");
+
+            DateTime tempDateTime = new DateTime(Convert.ToInt32(date[0]), Convert.ToInt32(date[1]), Convert.ToInt32(date[2]), Convert.ToInt32(time[0]), Convert.ToInt32(time[1]), Convert.ToInt32(date[2]));
+
+            if (!returnGMT)//retorna o horário convertido para 
+            {
+                tempDateTime = TimeZoneInfo.ConvertTimeFromUtc(tempDateTime,TimeZoneInfo.Local);
+            }
+
+            return tempDateTime;
+        }
     }
 }

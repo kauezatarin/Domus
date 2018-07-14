@@ -3,14 +3,15 @@
 #include <DHT.h>
 #include <DHT_U.h>
 #include <EEPROM.h>
-#include <Arduino.h>  // for type definitions
+#include <Arduino.h> // for type definitions
 
 #define DHTPIN A5 // pino que estamos conectado
 #define DHTTYPE DHT11 // DHT 11
 
-#define DEVICE_NAME "Casa" //nome do dispositivo
-#define DEVICE_TIPE 1 //tipo de dispositivo
-#define DATA_DELAY 30 //preserva o deay original para restauração futura
+#define DATA_DELAY 30 //preserva o delay original para restauração futura
+
+#define DEVICE_TIPE 1; //tipo de dispositivo REMOVER
+#define DEVICE_NAME "Casa"; //nome do dispositivo REMOVER
 
 char DEVICE_UNIQUE_ID[33] = "698dc19d489c4e4db73e28a713eab07b"; //id unico do device vinculado a sua conta
 
@@ -19,9 +20,17 @@ byte mac[6] = {
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
 };
 
+byte deviceIp[4]= {
+  192, 168, 1, 50
+};
+
+byte serverIp[4]= {
+  192, 168, 1, 41
+};
+
 bool isDHCP = true;
-IPAddress ip = IPAddress(192, 168, 1, 50);
-IPAddress servidor = IPAddress(192, 168, 1, 41);
+IPAddress ip;
+IPAddress servidor;
 
 int connectionPort = 9595;
 
@@ -46,7 +55,16 @@ void setup() {
   
   Serial.begin(9600);
 
-  
+  if(EEPROM.read(0) != 'c')
+  {
+    EEPROM_Clear();
+    EEPROM_save();
+  }   
+
+  EEPROM_loadConfigs(); //Carrega as configurações da EEPROM
+
+  ip = IPAddress(deviceIp[0], deviceIp[1], deviceIp[2], deviceIp[3]);
+  servidor = IPAddress(serverIp[0], serverIp[1], serverIp[2], serverIp[3]);
   
   //inicializa a placa de rede
   if(isDHCP)
@@ -187,17 +205,57 @@ void executeCommand(String command)
 }
 
 //carrega todas as configurações
-void loadConfigs()
+void EEPROM_loadConfigs()
 {
-  
+  for(int i =0; i < 4; i++) //carrega o ip do servidor
+  {
+    serverIp[i] = EEPROM.read(1+i);
+  }
+
+  isDHCP = EEPROM.read(7); //carrega se o device deverá obter seu ip através de DHCP
+
+  EEPROM_readAnything(5, connectionPort); //carrega a porta de conexão
+
+  for(int i =0; i < 4; i++) //carrega o ip do dispositivo caso exista alteração
+  {
+    deviceIp[i] = EEPROM.read(8+i);
+  }
+
+  for(int i =0; i < 6; i++) //carrega o mac do dispositivo caso exista alteração
+  {
+    mac[i] = EEPROM.read(12+i);
+  }
+
+  EEPROM_readAnything(18, connectionPort); //carrega o id unico do dispositivo
 }
 
 //salva todas as configurações na memoria
 void EEPROM_save()
 {
+
   EEPROM.update(0,'c'); //atualiza a flag caso seja a primeira configuração
   
-  //EEPROM.
+  for(int i =0; i < 4; i++) //atuaiza o ip do servidor caso exista alteração
+  {
+    EEPROM.update(1+i, serverIp[i]);
+  }
+
+  EEPROM.update(7, isDHCP); //atualiza se o device deverá obter seu ip através de DHCP
+
+  EEPROM_writeAnything(5, connectionPort); //salva a porta de conexão
+
+  for(int i =0; i < 4; i++) //atuaiza o ip do dispositivo caso exista alteração
+  {
+    EEPROM.update(8+i, deviceIp[i]);
+  }
+
+  for(int i =0; i < 6; i++) //atuaiza o mac do dispositivo caso exista alteração
+  {
+    EEPROM.update(12+i, mac[i]);
+  }
+
+  EEPROM_writeAnything(18, connectionPort); //salva o id unico do dispositivo
+  
 }
 
 //carrega da memoria o id unico do dispositivo
@@ -238,7 +296,7 @@ template <class T> int EEPROM_writeAnything(int ee, const T& value)
     const byte* p = (const byte*)(const void*)&value;
     unsigned int i;
     for (i = 0; i < sizeof(value); i++)
-          EEPROM.write(ee++, *p++);
+          EEPROM.update(ee++, *p++);
     return i;
 }
 

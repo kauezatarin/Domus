@@ -5,7 +5,7 @@
 #include <EEPROM.h>
 #include <Arduino.h> // for type definitions
 
-#define DHTPIN A5 // pino que estamos conectado
+#define DHTPIN A1 // pino que estamos conectado
 #define DHTTYPE DHT11 // DHT 11
 
 #define DATA_DELAY 30 //preserva o delay original para restauração futura
@@ -54,6 +54,8 @@ float humidade;
 void setup() {
   
   Serial.begin(9600);
+
+  EEPROM_Clear();
 
   if(EEPROM.read(0) != 'c')
   {

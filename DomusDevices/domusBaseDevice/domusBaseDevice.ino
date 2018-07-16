@@ -164,10 +164,6 @@ void executeCommand(String command)
   {
     outData = "";
     outData += "infos;";
-    outData += DEVICE_NAME;
-    outData += ";";
-    outData += DEVICE_TIPE;
-    outData += ";";
     outData += data_delay;
     outData += ";";
     outData += DEVICE_UNIQUE_ID;
@@ -178,10 +174,17 @@ void executeCommand(String command)
   }
   else if(command == "uidit")//já existe um dispositivo com esse UID conectado
   {
-    Serial.println("Uid já esta sendo usado. Tente novamente em 60 segundos. Isto pode ser causado por queda de conexão.");
+    Serial.println("Uid já esta sendo usado. Tente novamente em 60 segundos. Isto pode ocorrer por conta de queda de conexão.");
     client.stop();
 
     delay(60000);
+  }
+  else if(command == "uidnf")//o UID do sispositivo não está cadastrado no servidor.
+  {
+    Serial.println("Uid não cadastrado. Tentando novamente em 30 minutos. Isto ocorre quando o dispositivo não está cadastrado no servidor.");
+    client.stop();
+
+    delay(1800000);
   }
   else if(command == "shutdown")//recebido o comando de 'Server Shutdown'
   {

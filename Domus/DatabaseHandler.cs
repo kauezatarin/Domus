@@ -171,6 +171,75 @@ namespace Domus
             }
         }
 
+        /// <summary>
+        /// Verifica de o dispositivo está cadastrado no banco de dados
+        /// </summary>
+        public static bool IsAuthenticDevice(string connectionString, string UID)
+        {
+            int count = 0;
+ 
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT count(*) FROM devices WHERE device_id = '" + UID +"'";
+
+                        count = int.Parse(cmd.ExecuteScalar().ToString());
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+
+            if (count == 0)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Retorna um dispositivo que corresponde o UID informado
+        /// </summary>
+        public static Device GetDeviceByUid(string connectionString, string UID)
+        {
+            Device device;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM devices WHERE device_id = '" + UID + "'";
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            dataReader.Read();
+
+                            device = Maper.MapDevice(dataReader);
+                        }
+
+                        return device;
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
         /*//Count statement
         public int Count()
         {

@@ -50,8 +50,8 @@ namespace Domus
             Device temp = new Device(
                 dataReader.GetString("deviceName"),
                 dataReader.GetInt32("deviceType"),
-                dataReader.GetString("createdAt"),
-                dataReader.GetString("lastActivity"),
+                dataReader.GetString("created_at"),
+                dataReader.GetString("last_activity"),
                 dataReader.GetString("device_id"),
                 dataReader.GetBoolean("data1_active"),
                 dataReader.GetBoolean("data2_active"),

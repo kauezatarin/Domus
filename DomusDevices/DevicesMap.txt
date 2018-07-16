@@ -1,9 +1,19 @@
+===============HANDSHAKE===============
+
+1º) device envia --> shakeback
+2º) servidor envia --> SendInfos
+3º) device envia --> infos;data_delay;UID
+3º) servidor envia --> uidit OU uidnf OU conclui a autenticação
+
+=======================================
+
 ===============COMANDOS================
 
 -----------------REDE------------------
 ayt --> envia a resposta 'imhr' para sinalizar ao servidor que a conexão não caiu. (Recebido quando o servidor não receber dados ao atingir o delaytime)
 SendInfos --> envia os dados do sispositivo ao servidor. (Recebido quando o servidor solicita a identidade do dispositivo)
-uidit--> aguarda 60 segundos e tenta uma nova conexão. (Recebido do servidor quando já existe uma conexão ativa com o memso UID)
+uidit --> aguarda 60 segundos e tenta uma nova conexão. (Recebido do servidor quando já existe uma conexão ativa com o memso UID)
+uidnf --> aguarda 1800 segundos e tenta uma nova conexão. (Recebido do servidor quando o UID do dispositivo não for encontrado no banco de dados, UID não cadastrado)
 shutdown --> encerra a conexão e aguarda 240 segundos até uma nova tentativa de reconexão, após isso as tentativas passam a ser no tempo definido em DATA_DELAY. (Recebido quando o servidor inicia o processo de desligamento)
 changeTimer t --> altera o intevalo entre os envios dos dados para o tempo 't' definido pelo servidor. (Recebido quando o delay padrão do dispositivo excede o delay minimo aceito pelo servidor)
 ---------------------------------------
@@ -12,7 +22,6 @@ utilizado para que o clliente realize a primeira configuração do dispositivo.
 ---------------------------------------
 
 =======================================
-
 
 ========ENDEREÇAMENTO DE MEMORIA=======
 

@@ -10,9 +10,6 @@
 
 #define DATA_DELAY 30 //preserva o delay original para restauração futura
 
-#define DEVICE_TIPE 1; //tipo de dispositivo REMOVER
-#define DEVICE_NAME "Casa"; //nome do dispositivo REMOVER
-
 char DEVICE_UNIQUE_ID[33] = "698dc19d489c4e4db73e28a713eab07b"; //id unico do device vinculado a sua conta
 
 // pode ser convertido para bytes em decimal
@@ -176,7 +173,7 @@ void executeCommand(String command)
   }
   else if(command == "uidit")//já existe um dispositivo com esse UID conectado
   {
-    Serial.println("Uid já esta sendo usado. Tente novamente em 60 segundos. Isto pode ocorrer por conta de queda de conexão.");
+    Serial.println("Uid já esta sendo usado. Tente novamente em 60 segundos. Isto pode ocorrer por conta de queda recente de conexão.");
     client.stop();
 
     delay(60000);

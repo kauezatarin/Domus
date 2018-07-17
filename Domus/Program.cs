@@ -366,10 +366,15 @@ namespace Domus
                                     me.dataDelay = (Convert.ToInt32(data.Split(';')[1]) * 10) + 100;//pega o tempo do delay e adicionar 10 segundos
                                     me.deviceUniqueID = data.Split(';')[2];
 
-                                    if (me.dataDelay < config.minDataDelay)//if delay < minDataDelay segundos (30 + 10)
+                                    if (me.dataDelay < config.minDataDelay && me.deviceType !=2)//if delay < minDataDelay segundos (30 + 10)
                                     {
                                         me.dataDelay = config.minDataDelay;//sets the delay to 30+10 segundos
                                         ClientWrite(stream, "changeTimer " + (config.minDataDelay - 100) / 10);
+                                    }
+                                    else if (me.deviceType == 2)//case it's a plug device MODIFICAR
+                                    {
+                                        me.dataDelay = 120;//sets the delay to 2+10 segundos
+                                        ClientWrite(stream, "changeTimer " + (120 - 100) / 10);
                                     }
 
                                     getingDeviceInfos = false;

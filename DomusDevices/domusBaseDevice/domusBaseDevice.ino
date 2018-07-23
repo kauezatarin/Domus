@@ -14,7 +14,7 @@ char DEVICE_UNIQUE_ID[33] = "698dc19d489c4e4db73e28a713eab07b"; //id unico do de
 
 // pode ser convertido para bytes em decimal
 byte mac[6] = {
-  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
+  0x00, 0xE0, 0x4C, 0x48, 0x24, 0x9F
 };
 
 byte deviceIp[4]= {
@@ -29,7 +29,7 @@ bool isDHCP = true;
 IPAddress ip;
 IPAddress servidor;
 
-int connectionPort = 9595;
+unsigned int connectionPort = 9595;
 
 EthernetClient client;
 
@@ -43,16 +43,27 @@ String inData = String(100);
 String outData = String(100);
 char c;
 
+bool isDebugging = true;
+
 //sensor de humidade e temperatura
 DHT dht(DHTPIN, DHTTYPE);
 float temperatura;
 float humidade;
 
+//declaração de funções
+bool tryConnection();
+void executeCommand(String command);
+void executeSerialCommand();
+void EEPROM_loadConfigs();
+void EEPROM_save();
+void EEPROM_loadUniqueId(int addres, int keySize);
+void EEPROM_Clear();
+void SerialPrint(String text, bool debug);
+
+
 void setup() {
   
   Serial.begin(9600);
-
-  EEPROM_Clear();
 
   if(EEPROM.read(0) != 'c')
   {
@@ -80,12 +91,20 @@ void setup() {
 }
 
 void loop() {
-  // when the client sends the first byte, say hello:
+
+  // caso receba dados pela serial
+  if (Serial.available() > 0)
+  {
+    isDebugging = false; // desliga o envio de textos de depuração através da serial
+    executeSerialCommand();
+  }
+
+  // caso exista uma conexão ativa
   if (client) {
     
     if (client.connected() == false)
     {
-      Serial.println("Conexão Perdida!");
+      SerialPrint("Conexão Perdida!", true);
       data_delay = DATA_DELAY;
       client.stop();
     }
@@ -99,7 +118,7 @@ void loop() {
         inData+=c;
       }
 
-      Serial.println(inData);
+      SerialPrint(inData,true);
       executeCommand(inData);
     }
     else
@@ -118,41 +137,38 @@ void loop() {
         outData += dht.computeHeatIndex(temperatura, humidade, false);//sensação termica
         
         client.print(outData);
-        Serial.print("Dados enviados: ");
-        Serial.println(outData);
+        SerialPrint("Dados enviados: ",true);
+        SerialPrint(outData, true);
       }
     }   
   }
   else
-  {
-    while(!client)
-    {      
-      tryConnection();
-      
-      if (!client)
-        delay(reconnectDelay);
-    }    
+  {  
+    tryConnection();
+    
+    if (!client)
+      delay(reconnectDelay);       
   }
 }
 
 //tenta se conectar ao servidor
 bool tryConnection()
 {
-  Serial.println("connecting...");
+  SerialPrint("connecting...",true);
   
   if (client.connect(servidor, connectionPort)) {
-    Serial.println("connected");
+    SerialPrint("connected",true);
     client.print("shakeback");
     delay(100);
     return true;
   }
   else {
-    Serial.println("connection failed");
+    SerialPrint("connection failed",true);
     return false;
   }
 }
 
-//executa os comandos recebidos
+//executa os comandos recebidos pela rede
 void executeCommand(String command)
 {
   if(command == "ayt")//responde ao servidor para informar que a conexão não caiu
@@ -168,26 +184,26 @@ void executeCommand(String command)
     outData += DEVICE_UNIQUE_ID;
 
     client.print(outData);
-    Serial.print("Identificação realizada: ");
-    Serial.println(outData);
+    SerialPrint("Identificação realizada: ",true);
+    SerialPrint(outData,true);
   }
   else if(command == "uidit")//já existe um dispositivo com esse UID conectado
   {
-    Serial.println("Uid já esta sendo usado. Tente novamente em 60 segundos. Isto pode ocorrer por conta de queda recente de conexão.");
+    SerialPrint("Uid já esta sendo usado. Tente novamente em 60 segundos. Isto pode ocorrer por conta de queda recente de conexão.",true);
     client.stop();
 
     delay(60000);
   }
   else if(command == "uidnf")//o UID do sispositivo não está cadastrado no servidor.
   {
-    Serial.println("Uid não cadastrado. Tentando novamente em 30 minutos. Isto ocorre quando o dispositivo não está cadastrado no servidor.");
+    SerialPrint("Uid não cadastrado. Tentando novamente em 30 minutos. Isto ocorre quando o dispositivo não está cadastrado no servidor.",true);
     client.stop();
 
     delay(1800000);
   }
   else if(command == "shutdown")//recebido o comando de 'Server Shutdown'
   {
-    Serial.println("Recebido comando de desligamento de servicor. Conexão encerrada. Hibernando por 240 segundos...");
+    SerialPrint("Recebido comando de desligamento de servicor. Conexão encerrada. Hibernando por 240 segundos...",true);
     client.stop();
     data_delay = DATA_DELAY;
 
@@ -202,8 +218,83 @@ void executeCommand(String command)
     command += data_delay;
     command +=" segundos.";
     
-    Serial.println(command);
+    SerialPrint(command,true);
   }
+}
+
+//executa comandos recebidos pela serial
+void executeSerialCommand()
+{
+  String serial = Serial.readString();//recebe os dados da serial
+  char command[serial.length()+1];
+  char *p = command;
+  char *str;
+  int i = 0;
+
+  serial.toCharArray(command,serial.length()+1);//converte os dados para um vetor de caracteres.
+
+  if(command[0] == '1')//caso seja solicitado o envio das configurações
+  {
+    outData = "";
+
+    //ip do servidor
+    outData += serverIp[0];
+    outData += ";";
+    outData += serverIp[1];
+    outData += ";";
+    outData += serverIp[2];
+    outData += ";";
+    outData += serverIp[3];
+    outData += ";";
+
+    //porta do servidor
+    outData += connectionPort;
+    outData += ";";
+
+    //é DHCP?
+    outData += isDHCP;
+    outData += ";";
+
+    //ip do dispositivo
+    outData += deviceIp[0];
+    outData += ";";
+    outData += deviceIp[1];
+    outData += ";";
+    outData += deviceIp[2];
+    outData += ";";
+    outData += deviceIp[3];
+    outData += ";";
+
+    //mac do dispositivo
+    outData += mac[0];
+    outData += ";";
+    outData += mac[1];
+    outData += ";";
+    outData += mac[2];
+    outData += ";";
+    outData += mac[3];
+    outData += ";";
+    outData += mac[4];
+    outData += ";";
+    outData += mac[5];
+    outData += ";";
+
+    //UID
+    outData += DEVICE_UNIQUE_ID;
+    outData += ";";
+  
+    Serial.println(outData);
+  }
+  else if(command[1] == '2')
+  {
+    while ((str = strtok_r(p, ";", &p)) != NULL)// separa os caracteres
+    {
+      if(i==0)
+  
+      i++;
+    }
+  }
+  
 }
 
 //carrega todas as configurações
@@ -229,6 +320,8 @@ void EEPROM_loadConfigs()
   }
 
   EEPROM_readAnything(18, connectionPort); //carrega o id unico do dispositivo
+
+  SerialPrint("Configurações carregadas.",true);
 }
 
 //salva todas as configurações na memoria
@@ -257,7 +350,8 @@ void EEPROM_save()
   }
 
   EEPROM_writeAnything(18, connectionPort); //salva o id unico do dispositivo
-  
+
+  SerialPrint("Configurações salvas.",true);
 }
 
 //carrega da memoria o id unico do dispositivo
@@ -288,7 +382,7 @@ void EEPROM_Clear() {
 
   delay(10);
 
-  Serial.println("EEPROM apagada");
+  SerialPrint("EEPROM apagada",true);
 
   return;
 }
@@ -309,5 +403,17 @@ template <class T> int EEPROM_readAnything(int ee, T& value)
     for (i = 0; i < sizeof(value); i++)
           *p++ = EEPROM.read(ee++);
     return i;
+}
+
+void SerialPrint(String text, bool debug)
+{
+  if(isDebugging == false && debug == true)//caso seja teexto de depuração e exista uma conexão serial ativa, ignora o envio.
+  {
+    return; 
+  }
+  else
+  {
+    Serial.println(text);
+  }
 }
 

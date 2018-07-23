@@ -18,7 +18,11 @@ shutdown --> encerra a conexão e aguarda 240 segundos até uma nova tentativa de 
 changeTimer t --> altera o intevalo entre os envios dos dados para o tempo 't' definido pelo servidor. (Recebido quando o delay padrão do dispositivo excede o delay minimo aceito pelo servidor)
 ---------------------------------------
 ----------------SERIAL-----------------
-utilizado para que o clliente realize a primeira configuração do dispositivo.
+getInfos - 1 --> envia as configurações atuais do dispositivo pela serial.
+setInfos - 2 --> recebe um conjunto de configurações pela serial e as salva.
+
+Exemplos:
+--> 2;ipserver[0];ipserver[1];ipserver[2];ipserver[3];serverport;isDHCP;ipdevice[0];ipdevice[1];ipdevice[2];ipdevice[3];devicemac[0];devicemac[1];devicemac[2];devicemac[3];devicemac[4];devicemac[5];UID;
 ---------------------------------------
 
 =======================================

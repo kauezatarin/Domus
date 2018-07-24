@@ -35,6 +35,7 @@ namespace Domus
             Weather = new WeatherHandler(config.cityName, config.countryId, config.weatherApiKey);// adicionar os parametros na configuração
 
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
+            Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
 
             try
             {

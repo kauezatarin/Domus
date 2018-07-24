@@ -35,6 +35,7 @@ namespace Domus
             Weather = new WeatherHandler(config.cityName, config.countryId, config.weatherApiKey);// adicionar os parametros na configuração
 
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
+            Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
 
             try
             {
@@ -292,7 +293,7 @@ namespace Domus
 
             if (!config.bannedIPs.Contains(me.clientIP))
             {
-                ConsoleWrite("Device " + me.clientIP +
+                ConsoleWrite("Device at " + me.clientIP +
                              " connected on port {0}", true, device.Client.RemoteEndPoint.ToString().Split(':')[1]);
             }
 
@@ -341,29 +342,45 @@ namespace Domus
                             if (getingDeviceInfos && data.Contains("infos"))//set device infos to the memory
                             {
                                 ConnectionCommandStore temp = DeviceConnections.FirstOrDefault(ConnectionCommandStore =>
-                                        ConnectionCommandStore.deviceUniqueID == data.Split(';')[3]);
+                                        ConnectionCommandStore.deviceUniqueID == data.Split(';')[2]);
 
                                 if(temp != null)//verify if the device already has an connection on the list.
                                 {
                                     lostConnection = true; //derruba o cliente
 
                                     ClientWrite(stream, "uidit");//send UID is taken to device
-                                    ConsoleWrite("Device {0} is tying to connect using an UID that is already taken.", true, me.clientIP);
+                                    ConsoleWrite("Device at {0} is tying to connect using an UID that is already taken.", true, me.clientIP);
+                                }
+                                else if (!DatabaseHandler.IsAuthenticDevice(connectionString, data.Split(';')[2]))//verify if the device is listed at the database
+                                {
+                                    lostConnection = true; //derruba o cliente
+
+                                    ClientWrite(stream, "uidnf");//send UID not found to device
+                                    ConsoleWrite("Device at {0} is tying to connect using an UID that is not registered.", true, me.clientIP);
                                 }
                                 else//if it has not, then accepts the connection.
                                 {
-                                    me.deviceName = data.Split(';')[1];
-                                    me.deviceType = Convert.ToInt32(data.Split(';')[2]);
-                                    me.dataDelay = (Convert.ToInt32(data.Split(';')[3]) * 10) + 100;//pega o tempo do delay e adicionar 10 segundos
-                                    me.deviceUniqueID = data.Split(';')[4];
+                                    Device tempDevice = DatabaseHandler.GetDeviceByUid(connectionString, data.Split(';')[2]); //get device infos from database
 
-                                    if (me.dataDelay < config.minDataDelay)//if delay < minDataDelay segundos (30 + 10)
+                                    me.deviceName = tempDevice.deviceName;
+                                    me.deviceType = tempDevice.deviceType;
+                                    me.dataDelay = (Convert.ToInt32(data.Split(';')[1]) * 10) + 100;//pega o tempo do delay e adicionar 10 segundos
+                                    me.deviceUniqueID = data.Split(';')[2];
+
+                                    if (me.dataDelay < config.minDataDelay && me.deviceType !=2)//if delay < minDataDelay segundos (30 + 10)
                                     {
                                         me.dataDelay = config.minDataDelay;//sets the delay to 30+10 segundos
                                         ClientWrite(stream, "changeTimer " + (config.minDataDelay - 100) / 10);
                                     }
+                                    else if (me.deviceType == 2)//case it's a plug device MODIFICAR
+                                    {
+                                        me.dataDelay = 120;//sets the delay to 2+10 segundos
+                                        ClientWrite(stream, "changeTimer " + (120 - 100) / 10);
+                                    }
 
                                     getingDeviceInfos = false;
+
+                                    tempDevice = null; //libera a variavel da memória
 
                                     ConsoleWrite("Device {0} was identified as '{1}'", true, me.clientIP, me.deviceUniqueID);
                                 }

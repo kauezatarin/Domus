@@ -4,14 +4,14 @@
 #include <Arduino.h> // for type definitions
 #include <EmonLib.h>
 
-#define PINO_SCT A0 // pino que está o sensor SCT
+#define PINO_SCT A1 // pino que está o sensor SCT
 
 #define DATA_DELAY 30 //preserva o delay original para restauração futura
 
 #define DEVICE_TIPE 1; //tipo de dispositivo REMOVER
 #define DEVICE_NAME "Casa"; //nome do dispositivo REMOVER
 
-char DEVICE_UNIQUE_ID[33] = "698dc19d489c4e4db73e28a713eab07b"; //id unico do device vinculado a sua conta
+char DEVICE_UNIQUE_ID[33] = "d221ebc0b3b44507ba255e1d358fb1b2"; //id unico do device vinculado a sua conta
 
 // pode ser convertido para bytes em decimal
 byte mac[6] = {
@@ -23,7 +23,7 @@ byte deviceIp[4]= {
 };
 
 byte serverIp[4]= {
-  192, 168, 1, 41
+  192, 168, 1, 40
 };
 
 bool isDHCP = true;
@@ -55,8 +55,8 @@ void setup() {
   Serial.begin(9600);
   
   //Pino, calibracao - Cur Const= Ratio/BurdenR. 2000/33 = 60.60
-  emon1.current(PINO_SCT, 60);
-
+  emon1.current(PINO_SCT, 50);//realizada calibragem manual e constatado que 50 é o melhor valor
+  
   if(EEPROM.read(0) != 'c')
   {
     EEPROM_Clear();
@@ -78,6 +78,8 @@ void setup() {
     //Ethernet.begin(mac, ip, myDns, gateway, subnet);
     Ethernet.begin(mac, ip);
   }
+
+  preHeatSensor(6);
 }
 
 void loop() {
@@ -110,13 +112,14 @@ void loop() {
         lastTime = millis();
         outData = "";
         //Calcula a corrente
-		double Irms = emon1.calcIrms(1480);
+		    double Irms = emon1.calcIrms(1480);
+
+        if(Irms < 0.19)
+          Irms = 0.0;
 
         outData += Irms;//corrente
         outData += ";";
         outData += (Irms * rede);//potencia
-        //outData += ";";
-        //outData += dht.computeHeatIndex(temperatura, humidade, false);
         
         client.print(outData);
         Serial.print("Dados enviados: ");
@@ -133,6 +136,16 @@ void loop() {
       if (!client)
         delay(reconnectDelay);
     }    
+  }
+}
+
+//executa os primeiros ciclos de leitura do sensor para que o mesmo seja inicializado precisamente
+void preHeatSensor(int cicles)
+{
+  for(int i=0; i<cicles; i++)
+  {
+    emon1.calcIrms(1480);
+    delay(1000);
   }
 }
 
@@ -164,10 +177,6 @@ void executeCommand(String command)
   {
     outData = "";
     outData += "infos;";
-    outData += DEVICE_NAME;
-    outData += ";";
-    outData += DEVICE_TIPE;
-    outData += ";";
     outData += data_delay;
     outData += ";";
     outData += DEVICE_UNIQUE_ID;
@@ -178,10 +187,17 @@ void executeCommand(String command)
   }
   else if(command == "uidit")//já existe um dispositivo com esse UID conectado
   {
-    Serial.println("Uid já esta sendo usado. Tente novamente em 60 segundos. Isto pode ser causado por queda de conexão.");
+    Serial.println("Uid já esta sendo usado. Tente novamente em 60 segundos. Isto pode ocorrer por conta de queda recente de conexão.");
     client.stop();
 
     delay(60000);
+  }
+  else if(command == "uidnf")//o UID do sispositivo não está cadastrado no servidor.
+  {
+    Serial.println("Uid não cadastrado. Tentando novamente em 30 minutos. Isto ocorre quando o dispositivo não está cadastrado no servidor.");
+    client.stop();
+
+    delay(1800000);
   }
   else if(command == "shutdown")//recebido o comando de 'Server Shutdown'
   {

@@ -1,3 +1,11 @@
+/* Domus Base Device Code
+ *  
+ * É necessário alterar o valor definido em SERIAL_RX_BUFFER_SIZE para 128 no arquivo %appData%\Local\Arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino\HardwareSerial.h
+ * para que seja possivel receber todas as informações necessárias para configuração do dispositivo através da serial.
+ * 
+ * Desenvolvido por: Kauê Zatarin
+ */
+
 #include <SPI.h>
 #include <Ethernet.h>
 #include <DHT.h>
@@ -59,7 +67,6 @@ void EEPROM_save();
 void EEPROM_loadUniqueId(int addres, int keySize);
 void EEPROM_Clear();
 void SerialPrint(String text, bool debug);
-
 
 void setup() {
   
@@ -233,7 +240,11 @@ void executeSerialCommand()
 
   serial.toCharArray(command,serial.length()+1);//converte os dados para um vetor de caracteres.
 
-  if(command[0] == '1')//caso seja solicitado o envio das configurações
+  if(command[0] == '0')//caso receba o handshake
+  {
+    Serial.println("domus");
+  }
+  else if(command[0] == '1')//caso seja solicitado o envio das configurações
   {
     outData = "";
 
@@ -281,20 +292,50 @@ void executeSerialCommand()
 
     //UID
     outData += DEVICE_UNIQUE_ID;
-    outData += ";";
   
     Serial.println(outData);
   }
-  else if(command[1] == '2')
+  else if(command[0] == '2')//caso receba configurações a serem aplicadas
   {
     while ((str = strtok_r(p, ";", &p)) != NULL)// separa os caracteres
     {
-      if(i==0)
+      if(i>=1 && i < 5)
+      {
+        serverIp[i-1] = (byte)atoi(str);//converte a string para byte
+      }
+      else if(i == 5)
+      {
+        connectionPort = atoi(str);//converte a string para int
+      }
+      else if(i == 6)
+      {
+          isDHCP = (byte)atoi(str);//converte a string para byte
+      }
+      else if(i>=7 && i < 11)
+      {
+        deviceIp[i-7] = (byte)atoi(str);//converte a string para byte
+      }
+      else if(i>=11 && i < 17)
+      {
+        mac[i-11] = (byte)atoi(str);//converte a string para byte
+      }
+      else if(i == 17)
+      {      
+        for(int j=0; j<34; j++)
+        {
+          DEVICE_UNIQUE_ID[j] = *(str+j);
+        }    
+      }
   
       i++;
     }
+
+    EEPROM_save();
   }
-  
+  else if(command[0] == '3')//caso receba o comando de limpeza reseta a memoria
+  {
+    EEPROM_Clear();
+  }
 }
 
 //carrega todas as configurações

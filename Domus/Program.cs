@@ -9,7 +9,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
-using RSACypher;
 
 namespace Domus
 {
@@ -31,12 +30,13 @@ namespace Domus
             Thread deviceListener = null;
             Thread clientListener = null;
             Thread connectionCleaner = null;
+
+            Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
+
             connectionString = DatabaseHandler.CreateConnectionString(config.databaseIP, config.databasePort, config.databaseName, config.databaseUser, config.databasePassword);
             Weather = new WeatherHandler(config.cityName, config.countryId, config.weatherApiKey);// adicionar os parametros na configuração
-
-            Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
-            Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
-
+            
             try
             {
                 Console.Clear();
@@ -105,7 +105,6 @@ namespace Domus
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 clientListener.Name = "Client Listener";
                 clientListener.Start();
-                ConsoleWrite("Client connection length set to {0} with hash type {1}", true, config.RSAlength, config.HashTypeName());
                 
                 WaitKillCommand();
             }
@@ -473,17 +472,15 @@ namespace Domus
             Byte[] bytes = new Byte[1024];
             String data = null;
             NetworkStream stream;
-            bool lostConnection = false, login = false, isLoggedIn = false, keysChanged = false;
+            bool lostConnection = false, login = false, isLoggedIn = false;
             int i, timeOutCounter = 0;
             int timeOutTime = 10 * 60 * 1000;//10 minutos
-            RsaHandler rsa = new RsaHandler(config.RSAlength, config.RSAHashType);//chave 2048 bits com SHA1
 
             me.clientIP = client.Client.RemoteEndPoint.ToString().Split(':')[0];
 
             if (!config.bannedIPs.Contains(me.clientIP))
             {
-                ConsoleWrite("Client " + me.clientIP +
-                             " connected on port {0}", true, client.Client.RemoteEndPoint.ToString().Split(':')[1]);
+                ConsoleWrite("Client on {0} connected on port {1}", true, me.clientIP, client.Client.RemoteEndPoint.ToString().Split(':')[1]);
             }
 
             while (client.Connected)
@@ -524,21 +521,7 @@ namespace Domus
                             // Translate data bytes to a ASCII string.
                             data = Encoding.ASCII.GetString(bytes, 0, i);
 
-                            if (rsa.OuterPublicKey != null)
-                            {
-                                data = rsa.Decrypt(data);
-                            }
-
-                            if (!keysChanged && data.Contains("<RSAKeyValue>"))
-                            {
-                                ConsoleWrite("Started secure connection with client {0}", true, me.clientIP);
-                                rsa.OuterPublicKey = data;//salva a chave publica
-
-                                ClientWrite(stream, rsa.PublicKey);//envia a chave publica
-
-                                keysChanged = true;
-                            }
-                            else if (isLoggedIn)
+                            if (isLoggedIn)
                             {
                                 if (data == "stop\r\n")
                                     desligar = true;
@@ -546,13 +529,13 @@ namespace Domus
                                 {
                                     config.AddBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
                                     ConsoleWrite("Client {0} has banned the ip {1}", true, me.clientIP, data.Split(' ')[1]);
-                                    ClientWrite(stream, "You have banned " + rsa.Encrypt(data).Split(' ')[1]);
+                                    ClientWrite(stream, "You have banned " + data.Split(' ')[1]);
                                 }
                                 else if (data.StartsWith("unbanip"))
                                 {
                                     config.RemoveBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
                                     ConsoleWrite("Client {0} has unbanned the ip {1}", true, me.clientIP, data.Split(' ')[1]);
-                                    ClientWrite(stream, "You have unbanned " + rsa.Encrypt(data).Split(' ')[1]);
+                                    ClientWrite(stream, "You have unbanned " + data.Split(' ')[1]);
                                 }
                                 else if (data.Contains("exit"))
                                 {
@@ -576,13 +559,13 @@ namespace Domus
                                         }
 
                                         if (deviceData != null)
-                                            ClientWrite(stream, rsa.Encrypt("The last received data was: " + deviceData + "\r\n"));
+                                            ClientWrite(stream, "The last received data was: " + deviceData + "\r\n");
                                         else
-                                            ClientWrite(stream, rsa.Encrypt("No data Available.\r\n"));
+                                            ClientWrite(stream, "No data Available.\r\n");
                                     }
                                     catch (Exception)
                                     {
-                                        ClientWrite(stream, rsa.Encrypt("Failed to retrive data. Verify if Device Name is correct.\r\n"));
+                                        ClientWrite(stream, "Failed to retrive data. Verify if Device Name is correct.\r\n");
                                     }
 
                                 }
@@ -594,17 +577,17 @@ namespace Domus
                                     {
                                         if (device.conexao.IsAlive)
                                         {
-                                            ClientWrite(stream, rsa.Encrypt(device.deviceName + Environment.NewLine));
+                                            ClientWrite(stream, device.deviceName + Environment.NewLine);
                                             cont++;
                                         }
                                     }
 
                                     if (cont == 0)
-                                        ClientWrite(stream, rsa.Encrypt("There are no devices connected.\r\n"));
+                                        ClientWrite(stream, "There are no devices connected.\r\n");
                                 }
                                 else
                                 {
-                                    ClientWrite(stream, rsa.Encrypt("Invalid command.\r\n"));
+                                    ClientWrite(stream, "Invalid command.\r\n");
                                     ConsoleWrite("Client {0} has send: {1}", false, me.clientIP, data);
                                 }
                                 timeOutCounter = 0;
@@ -612,7 +595,7 @@ namespace Domus
                                 if (stream.DataAvailable == false)
                                     break;
                             }
-                            else if (!isLoggedIn && rsa.OuterPublicKey != null)
+                            else if (!isLoggedIn)
                             {
                                 login = true;
 
@@ -627,13 +610,13 @@ namespace Domus
                                         login = false;
                                         isLoggedIn = true;
 
-                                        ClientWrite(stream, rsa.Encrypt("sucessfullLogin"));
+                                        ClientWrite(stream, "sucessfullLogin");
 
                                         ConsoleWrite("Client has logged in as {0}", true, "admin");
                                     }
                                     else
                                     {
-                                        ClientWrite(stream, rsa.Encrypt("wrongLogin"));
+                                        ClientWrite(stream, "wrongLogin");
                                     }
 
                                 }

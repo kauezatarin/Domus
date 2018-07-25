@@ -27,10 +27,6 @@ namespace Domus
 
         public int maxLogSize { get; private set; } = 200;
 
-        public int RSAlength { get; private set; } = 1024;
-
-        public int RSAHashType { get; private set; } = 0;
-
         public string databaseIP { get; private set; } = "localhost";
 
         public int databasePort { get; private set; } = 3306;
@@ -79,10 +75,6 @@ namespace Domus
                     configWrite.WriteLine("clientListeningPort: 9090");
                     configWrite.WriteLine("deviceListeningPort: 9595");
                     configWrite.WriteLine("minDataDelay: 30");
-                    configWrite.WriteLine(configWrite.NewLine + "#RSA criptography:");
-                    configWrite.WriteLine("#RSA Types: 0- SHA1  1- SHA256  2- SHA512");
-                    configWrite.WriteLine("RSAlength: 1024");
-                    configWrite.WriteLine("RSAHashType: 0");
                     configWrite.WriteLine(configWrite.NewLine + "#Log Settings. Set maxLogSize in MB, -1 to unlimited:");
                     configWrite.WriteLine("#The 'forceLog' option is used to force the server to write everything to the Log file.");
                     configWrite.WriteLine("#WARNING: the 'forceLog' option can cause performance issues and memory leak in some cases, use only for debug.");
@@ -153,28 +145,6 @@ namespace Domus
                     else if (line.Contains("minDataDelay"))
                     {
                         minDataDelay = (Convert.ToInt32(line.Split(':')[1].Trim(' ')) * 10) + 100;
-                    }
-                    else if (line.Contains("RSAlength"))
-                    {
-                        RSAlength = Convert.ToInt32(line.Split(':')[1].Trim(' '));
-
-                        if (RSAlength < 1024 || RSAlength > 16384)
-                        {
-                            Console.WriteLine("RSA lenght can't be less than 1024 or higher than 16384 (2048 recommended). Using recommended value.");
-
-                            RSAlength = 2048;
-                        }
-                    }
-                    else if (line.Contains("RSAHashType"))
-                    {
-                        RSAHashType = Convert.ToInt32(line.Split(':')[1].Trim(' '));
-
-                        if (RSAHashType > 2 || RSAHashType < 0)
-                        {
-                            Console.WriteLine("The log type " + RSAHashType + " does not exists. Has type set to 0 (SHA1).");
-
-                            RSAHashType = 0;
-                        }
                     }
                     else if (line.Contains("logEnabled"))
                     {
@@ -267,13 +237,6 @@ namespace Domus
         public void SaveConfigs()
         {
             SaveBannedIPs();
-        }
-
-        public string HashTypeName()
-        {
-            string[] name = new[] { "SHA1", "SHA256", "SHA512" };
-
-            return name[RSAHashType];
         }
 
         public string GetLogPath()

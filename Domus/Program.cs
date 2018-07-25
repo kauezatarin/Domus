@@ -30,12 +30,13 @@ namespace Domus
             Thread deviceListener = null;
             Thread clientListener = null;
             Thread connectionCleaner = null;
+
+            Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
+
             connectionString = DatabaseHandler.CreateConnectionString(config.databaseIP, config.databasePort, config.databaseName, config.databaseUser, config.databasePassword);
             Weather = new WeatherHandler(config.cityName, config.countryId, config.weatherApiKey);// adicionar os parametros na configuração
-
-            Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
-            Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
-
+            
             try
             {
                 Console.Clear();
@@ -104,7 +105,6 @@ namespace Domus
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 clientListener.Name = "Client Listener";
                 clientListener.Start();
-                ConsoleWrite("Client connection length set to {0} with hash type {1}", true, config.RSAlength, config.HashTypeName());
                 
                 WaitKillCommand();
             }
@@ -480,8 +480,7 @@ namespace Domus
 
             if (!config.bannedIPs.Contains(me.clientIP))
             {
-                ConsoleWrite("Client " + me.clientIP +
-                             " connected on port {0}", true, client.Client.RemoteEndPoint.ToString().Split(':')[1]);
+                ConsoleWrite("Client on {0} connected on port {1}", true, me.clientIP, client.Client.RemoteEndPoint.ToString().Split(':')[1]);
             }
 
             while (client.Connected)

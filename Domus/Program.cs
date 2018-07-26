@@ -529,7 +529,7 @@ namespace Domus
                             //se o cliente já estiver logado
                             if (isLoggedIn)
                             {
-                                if (data.Contains("exit"))
+                                if (data.Contains("<exit>"))
                                 {
                                     ConsoleWrite("Client {0} has exited.", true, me.clientIP);
                                     lostConnection = true;
@@ -549,14 +549,26 @@ namespace Domus
                             else if (!isLoggedIn)
                             {
                                 login = true;
-
-                                if (data.Contains("<Login>"))
+                                
+                                if (data.Contains("<exit>"))
+                                {
+                                    ConsoleWrite("Client {0} has exited.", true, me.clientIP);
+                                    lostConnection = true;
+                                }
+                                else if (data.Contains("<Login>"))
                                 {
                                     data = data.Replace("<Login>", "");
 
                                     string[] userdata = data.Split(';');
 
-                                    user = DatabaseHandler.LoginRequest(connectionString, userdata[0]);
+                                    try
+                                    {
+                                        user = DatabaseHandler.LoginRequest(connectionString, userdata[0]);
+                                    }
+                                    catch
+                                    {
+                                        user = null;
+                                    }
 
                                     if (user != null && BCrypt.Net.BCrypt.Verify(userdata[1], user.password))
                                     {
@@ -581,7 +593,7 @@ namespace Domus
                         }
 
                     }
-                    catch (Exception e)//caso a leitura falhe
+                    catch//caso a leitura falhe
                     {
                         ConsoleWrite("Client {0} disconnected. Connection timeout.", true, me.clientIP);
                         lostConnection = true;

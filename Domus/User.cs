@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security;
 using System.Text;
 
 namespace Domus
@@ -40,5 +41,6 @@ namespace Domus
         public string lastLogin { get; set; }
 
         public string password { get; set; }
+
     }
 }

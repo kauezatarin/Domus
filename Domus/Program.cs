@@ -472,15 +472,16 @@ namespace Domus
             Byte[] bytes = new Byte[1024];
             String data = null;
             NetworkStream stream;
+            User user = null;
             bool lostConnection = false, login = false, isLoggedIn = false;
             int i, timeOutCounter = 0;
             int timeOutTime = 10 * 60 * 1000;//10 minutos
 
             me.clientIP = client.Client.RemoteEndPoint.ToString().Split(':')[0];
 
-            if (!config.bannedIPs.Contains(me.clientIP))
+            if (!config.bannedIPs.Contains(me.clientIP))//verifica se o IP não está banido e aceita a conexão
             {
-                ConsoleWrite("Client on {0} connected on port {1}", true, me.clientIP, client.Client.RemoteEndPoint.ToString().Split(':')[1]);
+                ConsoleWrite("Client at {0} connected on port {1}", true, me.clientIP, client.Client.RemoteEndPoint.ToString().Split(':')[1]);
             }
 
             while (client.Connected)
@@ -490,6 +491,7 @@ namespace Domus
                 // Get a stream object for reading and writing
                 stream = client.GetStream();
 
+                //verifica se o IP não foi banido durante a conexão ativa
                 if (config.bannedIPs.Contains(me.clientIP))
                 {
                     ConsoleWrite("Can't connect. The IP {0} is banned.", false, me.clientIP);
@@ -498,103 +500,52 @@ namespace Domus
                     lostConnection = true;
                 }
 
-                if (desligar)//se receber o sinal de desligar
+                //se receber o sinal de desligar
+                if (desligar)
                 {
                     ConsoleWrite("Client {0} disconnected by server shutting down command.", false, me.clientIP);
                     lostConnection = true;
                 }
 
-                if (lostConnection)//se a conexão for perdida
+                //se a conexão for perdida
+                if (lostConnection)
                 {
                     stream.Close();// end stream
                     client.Close(); // end connection
                     break;
                 }
 
-                if (stream.DataAvailable)//se houver dados a serem lidos
+                //se houver dados a serem lidos
+                if (stream.DataAvailable)
                 {
                     try
                     {
-                        // Loop to receive all the data sent by the client
+                        // Loop para receber todos os dados recebidos pelo cliente
                         while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
                         {
-                            // Translate data bytes to a ASCII string.
+                            // traduz bytes de dados para uma string ASCII.
                             data = Encoding.ASCII.GetString(bytes, 0, i);
 
+                            //se o cliente já estiver logado
                             if (isLoggedIn)
                             {
-                                if (data == "stop\r\n")
-                                    desligar = true;
-                                else if (data.StartsWith("banip"))
-                                {
-                                    config.AddBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
-                                    ConsoleWrite("Client {0} has banned the ip {1}", true, me.clientIP, data.Split(' ')[1]);
-                                    ClientWrite(stream, "You have banned " + data.Split(' ')[1]);
-                                }
-                                else if (data.StartsWith("unbanip"))
-                                {
-                                    config.RemoveBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
-                                    ConsoleWrite("Client {0} has unbanned the ip {1}", true, me.clientIP, data.Split(' ')[1]);
-                                    ClientWrite(stream, "You have unbanned " + data.Split(' ')[1]);
-                                }
-                                else if (data.Contains("exit"))
+                                if (data.Contains("exit"))
                                 {
                                     ConsoleWrite("Client {0} has exited.", true, me.clientIP);
                                     lostConnection = true;
                                 }
-                                else if (data.Contains("getdata"))
-                                {
-                                    string device = data.Split(' ')[1].Replace("\r\n", "");
-                                    string deviceData = null;
-
-                                    try
-                                    {
-                                        foreach (var DeviceConection in DeviceConnections.ToList())
-                                        {
-                                            if (DeviceConection.deviceName == device)
-                                            {
-                                                deviceData = DeviceConection.command;
-                                                break;
-                                            }
-                                        }
-
-                                        if (deviceData != null)
-                                            ClientWrite(stream, "The last received data was: " + deviceData + "\r\n");
-                                        else
-                                            ClientWrite(stream, "No data Available.\r\n");
-                                    }
-                                    catch (Exception)
-                                    {
-                                        ClientWrite(stream, "Failed to retrive data. Verify if Device Name is correct.\r\n");
-                                    }
-
-                                }
-                                else if (data.Contains("listdevices"))
-                                {
-                                    int cont = 0;
-
-                                    foreach (var device in DeviceConnections.ToList())
-                                    {
-                                        if (device.conexao.IsAlive)
-                                        {
-                                            ClientWrite(stream, device.deviceName + Environment.NewLine);
-                                            cont++;
-                                        }
-                                    }
-
-                                    if (cont == 0)
-                                        ClientWrite(stream, "There are no devices connected.\r\n");
-                                }
                                 else
                                 {
-                                    ClientWrite(stream, "Invalid command.\r\n");
-                                    ConsoleWrite("Client {0} has send: {1}", false, me.clientIP, data);
+                                    ExecuteClientAction(stream,data, me);//executa os comandos enviados pelo cliente
                                 }
+
                                 timeOutCounter = 0;
 
+                                //impede o lock do ciclo
                                 if (stream.DataAvailable == false)
                                     break;
                             }
+                            //procedimento de login
                             else if (!isLoggedIn)
                             {
                                 login = true;
@@ -605,14 +556,16 @@ namespace Domus
 
                                     string[] userdata = data.Split(';');
 
-                                    if (userdata[0] == "admin" && userdata[1] == "admin")
+                                    user = DatabaseHandler.LoginRequest(connectionString, userdata[0]);
+
+                                    if (user != null && BCrypt.Net.BCrypt.Verify(userdata[1], user.password))
                                     {
                                         login = false;
                                         isLoggedIn = true;
 
                                         ClientWrite(stream, "sucessfullLogin");
 
-                                        ConsoleWrite("Client has logged in as {0}", true, "admin");
+                                        ConsoleWrite("Client at {0} has logged in as {1}", true, me.clientIP, user.username);
                                     }
                                     else
                                     {
@@ -620,11 +573,15 @@ namespace Domus
                                     }
 
                                 }
+
+                                //impede o lock do ciclo
+                                if (stream.DataAvailable == false)
+                                    break;
                             }
                         }
 
                     }
-                    catch (Exception)//caso a leitura falhe
+                    catch (Exception e)//caso a leitura falhe
                     {
                         ConsoleWrite("Client {0} disconnected. Connection timeout.", true, me.clientIP);
                         lostConnection = true;
@@ -645,6 +602,43 @@ namespace Domus
 
             }
             return;
+        }
+
+        private static void ExecuteClientAction(NetworkStream stream, string data, ConnectionCommandStore me)
+        {
+            if (data.StartsWith("banip"))
+            {
+                config.AddBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
+                ConsoleWrite("Client {0} has banned the ip {1}", true, me.clientIP, data.Split(' ')[1]);
+                ClientWrite(stream, "You have banned " + data.Split(' ')[1]);
+            }
+            else if (data.StartsWith("unbanip"))
+            {
+                config.RemoveBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
+                ConsoleWrite("Client {0} has unbanned the ip {1}", true, me.clientIP, data.Split(' ')[1]);
+                ClientWrite(stream, "You have unbanned " + data.Split(' ')[1]);
+            }
+            else if (data.Contains("listdevices"))
+            {
+                int cont = 0;
+
+                foreach (var device in DeviceConnections.ToList())
+                {
+                    if (device.conexao.IsAlive)
+                    {
+                        ClientWrite(stream, device.deviceName + Environment.NewLine);
+                        cont++;
+                    }
+                }
+
+                if (cont == 0)
+                    ClientWrite(stream, "There are no devices connected.\r\n");
+            }
+            else
+            {
+                ClientWrite(stream, "Invalid command.\r\n");
+                ConsoleWrite("Client {0} has send: {1}", false, me.clientIP, data);
+            }
         }
 
         //Função para printar no console

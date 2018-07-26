@@ -14,11 +14,11 @@ namespace Domus
                 dataReader.GetString("username"),
                 dataReader.GetString("email"),
                 dataReader.GetString("name"),
-                dataReader.GetString("lastname"),
+                dataReader.GetString("last_name"),
                 dataReader.GetBoolean("isAdmin"),
-                dataReader.GetBoolean("isActive"),
-                dataReader.GetString("createdAt"),
-                dataReader.GetString("lastLogin"),
+                dataReader.GetBoolean("active"),
+                dataReader.GetString("created_at"),
+                dataReader.GetString("last_login"),
                 dataReader.GetString("password"),
                 dataReader.GetInt32("user_id"));
 

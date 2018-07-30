@@ -578,7 +578,7 @@ namespace Domus
                                     {
                                         ClientWrite(stream, "sucessfullLogin");
 
-                                        ConsoleWrite("Client at {0} has logged in as {1}", true, me.clientIP, user.username);
+                                        ConsoleWrite("Client at {0} has started to login as {1}", true, me.clientIP, user.username);
                                     }
                                     else
                                     {
@@ -593,6 +593,8 @@ namespace Domus
 
                                     //serializa o objeto User e envia para o cliente
                                     ClientWriteSerialized(stream, user);
+
+                                    ConsoleWrite("Client at {0} has logged in as {1}", true, me.clientIP, user.username);
                                 }
 
                                 //impede o lock do ciclo

@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27428.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domus", "Domus\Domus.csproj", "{CE5C93D2-6E70-41F5-995B-922080DF71FD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomusSharedClasses", "DomusSharedClasses\DomusSharedClasses.csproj", "{5FFD6FB9-DE1C-46B7-8EBD-2C452A4100DC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,14 @@ Global
 		{CE5C93D2-6E70-41F5-995B-922080DF71FD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CE5C93D2-6E70-41F5-995B-922080DF71FD}.Release|x64.ActiveCfg = Release|x64
 		{CE5C93D2-6E70-41F5-995B-922080DF71FD}.Release|x64.Build.0 = Release|x64
+		{5FFD6FB9-DE1C-46B7-8EBD-2C452A4100DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FFD6FB9-DE1C-46B7-8EBD-2C452A4100DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FFD6FB9-DE1C-46B7-8EBD-2C452A4100DC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5FFD6FB9-DE1C-46B7-8EBD-2C452A4100DC}.Debug|x64.Build.0 = Debug|Any CPU
+		{5FFD6FB9-DE1C-46B7-8EBD-2C452A4100DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FFD6FB9-DE1C-46B7-8EBD-2C452A4100DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FFD6FB9-DE1C-46B7-8EBD-2C452A4100DC}.Release|x64.ActiveCfg = Release|Any CPU
+		{5FFD6FB9-DE1C-46B7-8EBD-2C452A4100DC}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

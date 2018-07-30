@@ -1,5 +1,6 @@
 ﻿//Add MySql Library
 using MySql.Data.MySqlClient;
+using DomusSharedClasses;
 
 namespace Domus
 {

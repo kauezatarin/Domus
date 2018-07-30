@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
+using DomusSharedClasses;
 
 namespace Domus
 {
@@ -475,7 +476,7 @@ namespace Domus
             String data = null;
             NetworkStream stream;
             User user = null;
-            bool lostConnection = false, login = false, isLoggedIn = false;
+            bool lostConnection = false, isLoggedIn = false;
             int i, timeOutCounter = 0;
             int timeOutTime = 10 * 60 * 1000;//10 minutos
 
@@ -552,7 +553,6 @@ namespace Domus
                             //procedimento de login
                             else if (!isLoggedIn)
                             {
-                                login = true;
                                 
                                 if (data.Contains("<exit>"))
                                 {
@@ -584,17 +584,15 @@ namespace Domus
                                     {
                                         ClientWrite(stream, "wrongLogin");
                                     }
+                                }
+                                else if (data.Contains("<SendUser>"))
+                                {
+                                    isLoggedIn = true;
 
-                                    if (data.Contains("<SendUser>"))
-                                    {
-                                        login = false;
-                                        isLoggedIn = true;
+                                    user.password = null; //remove a senha do objeto antes que o memso seja enviado para o cliente
 
-                                        user.password = null; //remove a senha do objeto antes que o memso seja enviado para o cliente
-
-                                        //serializa o objeto User e envia para o cliente
-                                        ClientWriteSerialized(stream,user);
-                                    }
+                                    //serializa o objeto User e envia para o cliente
+                                    ClientWriteSerialized(stream, user);
                                 }
 
                                 //impede o lock do ciclo

@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Security;
-using System.Text;
 
-namespace Domus
+namespace DomusSharedClasses
 {
     [Serializable]
     public class User
@@ -21,7 +18,6 @@ namespace Domus
             this.password = password;
             this.userId = userId;
         }
-
 
         public int userId { get; private set; }
 

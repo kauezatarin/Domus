@@ -5,6 +5,7 @@ using System.Text;
 
 namespace Domus
 {
+    [Serializable]
     public class User
     {
         public User(string username, string email, string name, string lastName, bool isAdmin, bool isActive, string createdAt, string lastLogin, string password = null, int userId = 0)

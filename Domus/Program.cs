@@ -3,8 +3,10 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -572,9 +574,6 @@ namespace Domus
 
                                     if (user != null && BCrypt.Net.BCrypt.Verify(userdata[1], user.password))
                                     {
-                                        login = false;
-                                        isLoggedIn = true;
-
                                         ClientWrite(stream, "sucessfullLogin");
 
                                         ConsoleWrite("Client at {0} has logged in as {1}", true, me.clientIP, user.username);
@@ -584,6 +583,16 @@ namespace Domus
                                         ClientWrite(stream, "wrongLogin");
                                     }
 
+                                    if (data.Contains("<SendUser>"))
+                                    {
+                                        login = false;
+                                        isLoggedIn = true;
+
+                                        user.password = null; //remove a senha do objeto antes que o memso seja enviado para o cliente
+
+                                        //serializa o objeto User e envia para o cliente
+                                        ClientWriteSerialized(stream,user);
+                                    }
                                 }
 
                                 //impede o lock do ciclo
@@ -681,6 +690,24 @@ namespace Domus
             {
                 return false;
             }
+        }
+
+        //Função que envia objetos serializados para o cliente
+        private static void ClientWriteSerialized(NetworkStream stream, object sendObj)
+        {
+            byte[] userDataBytes;
+            MemoryStream ms = new MemoryStream();
+            BinaryFormatter bf1 = new BinaryFormatter();
+
+            bf1.Serialize(ms, sendObj);
+            userDataBytes = ms.ToArray();
+            byte[] userDataLen = BitConverter.GetBytes((Int32)userDataBytes.Length);
+
+            //primeiro envia o tamanho dos dados a serem enviados para que o cliente se prepare
+            stream.Write(userDataLen, 0, 4);
+
+            //envia os dados para o cliente
+            stream.Write(userDataBytes, 0, userDataBytes.Length);
         }
 
         //Garbage colector que limpa a lista de clientes e devices conectados

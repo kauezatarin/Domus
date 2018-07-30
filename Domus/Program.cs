@@ -533,12 +533,14 @@ namespace Domus
                             {
                                 if (data.Contains("<exit>"))
                                 {
-                                    ConsoleWrite("Client {0} has exited.", true, me.clientIP);
+                                    ConsoleWrite("User {0} has loggedout.", true, user.username);
+
+                                    ConsoleWrite("Client at {0} has exited.", true, me.clientIP);
                                     lostConnection = true;
                                 }
                                 else
                                 {
-                                    ExecuteClientAction(stream,data, me);//executa os comandos enviados pelo cliente
+                                    ExecuteClientAction(stream,data, me, user);//executa os comandos enviados pelo cliente
                                 }
 
                                 timeOutCounter = 0;
@@ -554,7 +556,7 @@ namespace Domus
                                 
                                 if (data.Contains("<exit>"))
                                 {
-                                    ConsoleWrite("Client {0} has exited.", true, me.clientIP);
+                                    ConsoleWrite("Client at {0} has exited.", true, me.clientIP);
                                     lostConnection = true;
                                 }
                                 else if (data.Contains("<Login>"))
@@ -625,18 +627,18 @@ namespace Domus
             return;
         }
 
-        private static void ExecuteClientAction(NetworkStream stream, string data, ConnectionCommandStore me)
+        private static void ExecuteClientAction(NetworkStream stream, string data, ConnectionCommandStore me, User user)
         {
             if (data.StartsWith("banip"))
             {
                 config.AddBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
-                ConsoleWrite("Client {0} has banned the ip {1}", true, me.clientIP, data.Split(' ')[1]);
+                ConsoleWrite("User {0}@{1} has banned the ip {1}", true, user.username, me.clientIP, data.Split(' ')[1]);
                 ClientWrite(stream, "You have banned " + data.Split(' ')[1]);
             }
             else if (data.StartsWith("unbanip"))
             {
                 config.RemoveBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
-                ConsoleWrite("Client {0} has unbanned the ip {1}", true, me.clientIP, data.Split(' ')[1]);
+                ConsoleWrite("User {0}@{1} has unbanned the ip {1}", true, user.username, me.clientIP, data.Split(' ')[1]);
                 ClientWrite(stream, "You have unbanned " + data.Split(' ')[1]);
             }
             else if (data.Contains("listdevices"))
@@ -653,12 +655,12 @@ namespace Domus
                 }
 
                 if (cont == 0)
-                    ClientWrite(stream, "There are no devices connected.\r\n");
+                    ClientWrite(stream, "noDevices");
             }
             else
             {
-                ClientWrite(stream, "Invalid command.\r\n");
-                ConsoleWrite("Client {0} has send: {1}", false, me.clientIP, data);
+                ClientWrite(stream, "InvalidCommand.");
+                ConsoleWrite("User {0}@{1} has send: {1}", false, user.username, me.clientIP, data);
             }
         }
 

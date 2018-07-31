@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -58,20 +59,27 @@ namespace Domus
                     Console.Read();
                     return;
                 }
+
+                bool databasereached = false;
+
+                while (databasereached == false)
+                {
+                    //verifica se o banco de dados está ativo
+                    try
+                    {
+                        ConsoleWrite("Testing database connection on {0}:{1}", true, config.databaseIP, config.databasePort);
+                        DatabaseHandler.TestConnection(connectionString);
+                        databasereached = true;
+                        ConsoleWrite("Database Connection success", true);
+                    }
+                    catch (MySqlException e)
+                    {
+                        ConsoleWrite("Database connection Failure. {0} - {1}", true, e.Number, e.Message);
+                        ConsoleWrite("Retrying in {0} seconds...", true, 30);
+                        Thread.Sleep(30000);
+                    }
+                }
                 
-                //verifica se o banco de dados está ativo
-                try
-                {
-                    ConsoleWrite("Testing database connection on {0}:{1}", true, config.databaseIP, config.databasePort);
-                    DatabaseHandler.TestConnection(connectionString);
-                }
-                catch (MySqlException e)
-                {
-                    ConsoleWrite("Database connection Failure. {0} - {1}", true, e.Code, e.Message);
-                    ConsoleWrite("Press any key to exit.", false);
-                    Console.Read();
-                    return;
-                }
 
                 //Tenta resgatar a previsão do tempo
                 ConsoleWrite("Acquiring forecast informations", true);

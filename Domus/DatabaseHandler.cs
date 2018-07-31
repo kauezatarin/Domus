@@ -31,14 +31,13 @@ namespace Domus
         /// </summary>
         public static void TestConnection(string connectionString)
         {
-
             using (var conn = new MySqlConnection(connectionString))
             {
                 try
                 {
                     conn.Open();
                 }
-                catch (MySqlException e)
+                catch(MySqlException e)
                 {
                     throw e;
                 }
@@ -69,7 +68,7 @@ namespace Domus
 
                         return user;
                     }
-                    catch (Exception e)
+                    catch (MySqlException e)
                     {
                         throw e;
                     }
@@ -101,7 +100,7 @@ namespace Domus
 
                     cmd.ExecuteNonQuery();
                 }
-                catch (Exception e)
+                catch (MySqlException e)
                 {
                     throw e;
                 }
@@ -136,7 +135,7 @@ namespace Domus
 
                     cmd.ExecuteNonQuery();
                 }
-                catch (Exception e)
+                catch (MySqlException e)
                 {
                     throw e;
                 }
@@ -164,7 +163,7 @@ namespace Domus
 
                     cmd.ExecuteNonQuery();
                 }
-                catch (Exception e)
+                catch (MySqlException e)
                 {
                     throw e;
                 }
@@ -190,7 +189,7 @@ namespace Domus
 
                         count = int.Parse(cmd.ExecuteScalar().ToString());
                     }
-                    catch (Exception e)
+                    catch (MySqlException e)
                     {
                         throw e;
                     }
@@ -232,7 +231,7 @@ namespace Domus
 
                         return device;
                     }
-                    catch (Exception e)
+                    catch (MySqlException e)
                     {
                         throw e;
                     }

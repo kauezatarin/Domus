@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Authors>Kauê Zatarin</Authors>
+    <Description>Pacote de bibliotecas compartilhadas utilizadas no projeto Domus.</Description>
+  </PropertyGroup>
+
+</Project>

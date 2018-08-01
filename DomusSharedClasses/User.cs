@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Domus
+namespace DomusSharedClasses
 {
+    [Serializable]
     public class User
     {
         public User(string username, string email, string name, string lastName, bool isAdmin, bool isActive, string createdAt, string lastLogin, string password = null, int userId = 0)
@@ -19,7 +18,6 @@ namespace Domus
             this.password = password;
             this.userId = userId;
         }
-
 
         public int userId { get; private set; }
 
@@ -40,5 +38,6 @@ namespace Domus
         public string lastLogin { get; set; }
 
         public string password { get; set; }
+
     }
 }

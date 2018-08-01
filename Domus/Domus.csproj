@@ -8,7 +8,7 @@
     <ApplicationIcon>Dome.ico</ApplicationIcon>
     <Win32Resource />
     <StartupObject>Domus.Program</StartupObject>
-    <Version>0.4.5.5</Version>
+    <Version>0.4.6</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -16,7 +16,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="3.1.0" />
     <PackageReference Include="MySql.Data" Version="8.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DomusSharedClasses\DomusSharedClasses.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Globalization;
@@ -664,9 +665,24 @@ namespace Domus
                 if (cont == 0)
                     ClientWrite(stream, "noDevices");
             }
+            else if (data.Contains("listUsers"))
+            {
+                try
+                {
+                    List<User> Users = DatabaseHandler.GetAllUsers(connectionString);
+
+                    ClientWriteSerialized(stream, Users);
+
+                    ConsoleWrite("Listed all clients to user {0}", true, user.username);
+                }
+                catch(Exception e)
+                {
+                    ConsoleWrite("Fail to list all clients to user {0} - {1}", true, user.username, e.Message);
+                }
+            }
             else
             {
-                ClientWrite(stream, "InvalidCommand.");
+                ClientWrite(stream, "InvalidCommand");
                 ConsoleWrite("User {0}@{1} has send: {1}", false, user.username, me.clientIP, data);
             }
         }

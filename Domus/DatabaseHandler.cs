@@ -240,6 +240,46 @@ namespace Domus
             }
         }
 
+        /// <summary>
+        /// Retorna uma lista contendo todos os usuários cadastrados
+        /// </summary>
+        public static List<User> GetAllUsers(string connectionString)
+        {
+            List<User> users = new List<User>();
+            User temp;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM users";
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            while (dataReader.Read())
+                            {
+                                temp = Maper.MapUser(dataReader);
+
+                                temp.password = null;
+
+                                users.Add(temp);
+                            }
+                        }
+
+                        return users;
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
         /*//Count statement
         public int Count()
         {

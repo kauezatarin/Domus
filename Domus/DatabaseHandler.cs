@@ -133,6 +133,35 @@ namespace Domus
         }
 
         /// <summary>
+        /// Atualiza um usuário no banco
+        /// </summary>
+        public static void UpdateUser(string connectionString, User user)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "UPDATE users SET username = '" +
+                                      user.username +
+                                      "', email = '"+ user.email +
+                                      "', active = " + user.isActive +
+                                      ", name = '"+ user.name + 
+                                      "', last_name = '"+ user.lastName + 
+                                      "', isAdmin = " + user.isAdmin +
+                                      " WHERE user_id=" + user.userId;
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        /// <summary>
         /// Insere um dispositivo no banco
         /// </summary>
         public static void InsertDevice(string connectionString, Device device)

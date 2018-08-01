@@ -699,6 +699,25 @@ namespace Domus
                     ConsoleWrite("Fail to list all clients to user {0} - {1}", true, user.username, e.Message);
                 }
             }
+            else if (data.Contains("UpdateUser"))
+            {
+                try
+                {
+                    ClientWrite(stream, "sendUser");
+
+                    User temp = (User) ClientReadSerilized(stream, 30000);
+
+                    DatabaseHandler.UpdateUser(connectionString,temp);
+
+                    ClientWrite(stream, "UserUpdated");
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Error on complete UpdateUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+
+                    ClientWrite(stream, "FailToUpdate");
+                }
+            }
             else
             {
                 ClientWrite(stream, "InvalidCommand");
@@ -752,6 +771,38 @@ namespace Domus
 
             //envia os dados para o cliente
             stream.Write(userDataBytes, 0, userDataBytes.Length);
+        }
+
+        //Função que le um objeto serializado
+        private static object ClientReadSerilized(NetworkStream stream, int timeout = -1)
+        {
+            byte[] readMsgLen = new byte[4];
+            int dataLen;
+            byte[] readMsgData;
+            BinaryFormatter bf1 = new BinaryFormatter();
+            MemoryStream ms;
+
+            //seta o timeout de leitura dos dados para 30 segundos
+            stream.ReadTimeout = timeout;
+
+            //le o tamanho dos dados que serão recebidos
+            stream.Read(readMsgLen, 0, 4);
+            dataLen = BitConverter.ToInt32(readMsgLen, 0);
+            readMsgData = new byte[dataLen];
+
+            //le os dados que estão sendo recebidos
+            stream.Read(readMsgData, 0, dataLen);
+
+            ms = new MemoryStream(readMsgData);
+            ms.Position = 0;
+
+            //converte os dados recebidos para um objeto
+            object objeto = bf1.Deserialize(ms);
+
+            //seta o timeout para o valor padrão (infinito)
+            stream.ReadTimeout = -1;
+
+            return objeto;
         }
 
         //Garbage colector que limpa a lista de clientes e devices conectados

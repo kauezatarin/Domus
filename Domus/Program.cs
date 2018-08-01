@@ -584,9 +584,20 @@ namespace Domus
 
                                     if (user != null && BCrypt.Net.BCrypt.Verify(userdata[1], user.password))
                                     {
-                                        ClientWrite(stream, "sucessfullLogin");
+                                        try
+                                        {
+                                            DatabaseHandler.UpdateUserLastLogin(connectionString, user.userId);
 
-                                        ConsoleWrite("Client at {0} has started to login as {1}", true, me.clientIP, user.username);
+                                            ClientWrite(stream, "sucessfullLogin");
+
+                                            ConsoleWrite("Client at {0} has started to login as {1}", true, me.clientIP, user.username);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            ConsoleWrite("Error to login {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+
+                                            ClientWrite(stream, "wrongLogin");
+                                        }
                                     }
                                     else
                                     {

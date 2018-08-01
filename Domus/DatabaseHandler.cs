@@ -78,6 +78,30 @@ namespace Domus
         }
 
         /// <summary>
+        /// Atualiza o timestamp do usuário com a ultima data de login
+        /// </summary>
+        public static void UpdateUserLastLogin(string connectionString, int userId)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "UPDATE users SET last_login = '" + 
+                                      DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + 
+                                      "' WHERE user_id=" + userId;
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        /// <summary>
         /// Insere um usuário no banco
         /// </summary>
         public static void InsertUser(string connectionString, User user)

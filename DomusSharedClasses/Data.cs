@@ -2,6 +2,7 @@
 
 namespace DomusSharedClasses
 {
+    [Serializable]
     public class Data
     {
         public Data()

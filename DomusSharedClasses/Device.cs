@@ -4,6 +4,7 @@ using System.Text;
 
 namespace DomusSharedClasses
 {
+    [Serializable]
     public class Device
     {
         public Device(string deviceName, int deviceType, string createdAt, string lastActivity, string deviceId = null, bool data1_active = false, bool data2_active = false, bool data3_active = false, bool data4_active = false, string data1_name = " ", string data2_name = " ", string data3_name = " ", string data4_name = " ")

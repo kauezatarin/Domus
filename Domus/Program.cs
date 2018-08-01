@@ -356,14 +356,14 @@ namespace Domus
 
                                 if(temp != null)//verify if the device already has an connection on the list.
                                 {
-                                    lostConnection = true; //derruba o cliente
+                                    lostConnection = true; //drop the client
 
                                     ClientWrite(stream, "uidit");//send UID is taken to device
                                     ConsoleWrite("Device at {0} is tying to connect using an UID that is already taken.", true, me.clientIP);
                                 }
                                 else if (!DatabaseHandler.IsAuthenticDevice(connectionString, data.Split(';')[2]))//verify if the device is listed at the database
                                 {
-                                    lostConnection = true; //derruba o cliente
+                                    lostConnection = true; //drop the client
 
                                     ClientWrite(stream, "uidnf");//send UID not found to device
                                     ConsoleWrite("Device at {0} is tying to connect using an UID that is not registered.", true, me.clientIP);
@@ -374,7 +374,7 @@ namespace Domus
 
                                     me.deviceName = tempDevice.deviceName;
                                     me.deviceType = tempDevice.deviceType;
-                                    me.dataDelay = (Convert.ToInt32(data.Split(';')[1]) * 10) + 100;//pega o tempo do delay e adicionar 10 segundos
+                                    me.dataDelay = (Convert.ToInt32(data.Split(';')[1]) * 10) + 100;//gets delay time and adds 10 seconds
                                     me.deviceUniqueID = data.Split(';')[2];
 
                                     if (me.dataDelay < config.minDataDelay && me.deviceType !=2)//if delay < minDataDelay segundos (30 + 10)
@@ -390,7 +390,7 @@ namespace Domus
 
                                     getingDeviceInfos = false;
 
-                                    tempDevice = null; //libera a variavel da memória
+                                    tempDevice = null; //free var from memory
 
                                     ConsoleWrite("Device {0} was identified as '{1}'", true, me.clientIP, me.deviceUniqueID);
                                 }
@@ -398,7 +398,7 @@ namespace Domus
                             else if (data == "??\u001f?? ??\u0018??'??\u0001??\u0003??\u0003")//se um cliente tentar se conectar na porta de devices
                             {
                                 ConsoleWrite("Connection denied to client {0}. Wrong connection port.", true, me.clientIP, data);
-                                ClientWrite(stream, "Connection Denied. You will be disconnected in 5 seconds.");
+                                ClientWrite(stream, "WrongPort");
                                 Thread.Sleep(5000);
                                 lostConnection = true;
                             }
@@ -484,7 +484,7 @@ namespace Domus
             String data = null;
             NetworkStream stream;
             User user = null;
-            bool lostConnection = false, isLoggedIn = false;
+            bool lostConnection = false, isLoggedIn = false, isClient = false;
             int i, timeOutCounter = 0;
             int timeOutTime = 10 * 60 * 1000;//10 minutos
 
@@ -614,6 +614,14 @@ namespace Domus
                                     ClientWriteSerialized(stream, user);
 
                                     ConsoleWrite("Client at {0} has logged in as {1}", true, me.clientIP, user.username);
+                                }
+                                else if (data == "shakeback")
+                                {
+                                    ClientWrite(stream, "SendInfos");
+                                }
+                                else if (data == "??\u001f?? ??\u0018??'??\u0001??\u0003??\u0003")
+                                {
+                                    ClientWrite(stream, "ConnectionAccepted");
                                 }
 
                                 //impede o lock do ciclo

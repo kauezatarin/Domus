@@ -705,11 +705,15 @@ namespace Domus
                 {
                     ClientWrite(stream, "sendUser");
 
+                    ConsoleWrite("User {0}@{1} has sent an UpdateUser reuest.", true, user.username, me.clientIP);
+
                     User temp = (User) ClientReadSerilized(stream, 30000);
 
                     DatabaseHandler.UpdateUser(connectionString,temp);
 
                     ClientWrite(stream, "UserUpdated");
+
+                    ConsoleWrite("UpdateUser request from {0}@{1} was successfully updated teh user {2}.", true, user.username, me.clientIP, temp.username);
                 }
                 catch (Exception e)
                 {

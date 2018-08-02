@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using DomusSharedClasses;
 //Add MySql Library
 using MySql.Data.MySqlClient;
@@ -21,7 +22,8 @@ namespace Domus
                 "DATABASE=" + databaseName + ";" +
                 "UID=" + databaseUser + ";" +
                 "PASSWORD=" + databasePassword + ";" +
-                "SslMode = none";
+                "SslMode = none" + ";" +
+                "CharSet=utf8";
 
             return connectionString;
         }
@@ -58,7 +60,7 @@ namespace Domus
                     try
                     {
                         conn.Open();
-                        cmd.CommandText = "SELECT * FROM Users WHERE username = '" + username + "'";
+                        cmd.CommandText = "SELECT * FROM users WHERE username = '" + username + "' AND active = True";
 
                         using (MySqlDataReader dataReader = cmd.ExecuteReader())
                         {
@@ -73,6 +75,30 @@ namespace Domus
                         throw e;
                     }
 
+                }
+            }
+        }
+
+        /// <summary>
+        /// Atualiza o timestamp do usuário com a ultima data de login
+        /// </summary>
+        public static void UpdateUserLastLogin(string connectionString, int userId)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "UPDATE users SET last_login = '" + 
+                                      DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + 
+                                      "' WHERE user_id=" + userId;
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
                 }
             }
         }
@@ -105,6 +131,57 @@ namespace Domus
                     throw e;
                 }
 
+            }
+        }
+
+        /// <summary>
+        /// Atualiza um usuário no banco
+        /// </summary>
+        public static void UpdateUser(string connectionString, User user)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "UPDATE users SET username = '" +
+                                      user.username +
+                                      "', email = '"+ user.email +
+                                      "', active = " + user.isActive +
+                                      ", name = '"+ user.name + 
+                                      "', last_name = '"+ user.lastName + 
+                                      "', isAdmin = " + user.isAdmin +
+                                      " WHERE user_id=" + user.userId;
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Deleta um usuário no banco
+        /// </summary>
+        public static void DeleteUser(string connectionString, int userId)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "DELETE FROM users WHERE user_id=" + userId;
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
             }
         }
 
@@ -232,6 +309,46 @@ namespace Domus
                         return device;
                     }
                     catch (MySqlException e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retorna uma lista contendo todos os usuários cadastrados
+        /// </summary>
+        public static List<User> GetAllUsers(string connectionString)
+        {
+            List<User> users = new List<User>();
+            User temp;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM users";
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            while (dataReader.Read())
+                            {
+                                temp = Maper.MapUser(dataReader);
+
+                                temp.password = null;
+
+                                users.Add(temp);
+                            }
+                        }
+
+                        return users;
+                    }
+                    catch (Exception e)
                     {
                         throw e;
                     }

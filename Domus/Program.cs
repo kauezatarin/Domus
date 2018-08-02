@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Globalization;
@@ -355,14 +356,14 @@ namespace Domus
 
                                 if(temp != null)//verify if the device already has an connection on the list.
                                 {
-                                    lostConnection = true; //derruba o cliente
+                                    lostConnection = true; //drop the client
 
                                     ClientWrite(stream, "uidit");//send UID is taken to device
                                     ConsoleWrite("Device at {0} is tying to connect using an UID that is already taken.", true, me.clientIP);
                                 }
                                 else if (!DatabaseHandler.IsAuthenticDevice(connectionString, data.Split(';')[2]))//verify if the device is listed at the database
                                 {
-                                    lostConnection = true; //derruba o cliente
+                                    lostConnection = true; //drop the client
 
                                     ClientWrite(stream, "uidnf");//send UID not found to device
                                     ConsoleWrite("Device at {0} is tying to connect using an UID that is not registered.", true, me.clientIP);
@@ -373,7 +374,7 @@ namespace Domus
 
                                     me.deviceName = tempDevice.deviceName;
                                     me.deviceType = tempDevice.deviceType;
-                                    me.dataDelay = (Convert.ToInt32(data.Split(';')[1]) * 10) + 100;//pega o tempo do delay e adicionar 10 segundos
+                                    me.dataDelay = (Convert.ToInt32(data.Split(';')[1]) * 10) + 100;//gets delay time and adds 10 seconds
                                     me.deviceUniqueID = data.Split(';')[2];
 
                                     if (me.dataDelay < config.minDataDelay && me.deviceType !=2)//if delay < minDataDelay segundos (30 + 10)
@@ -389,7 +390,7 @@ namespace Domus
 
                                     getingDeviceInfos = false;
 
-                                    tempDevice = null; //libera a variavel da memória
+                                    tempDevice = null; //free var from memory
 
                                     ConsoleWrite("Device {0} was identified as '{1}'", true, me.clientIP, me.deviceUniqueID);
                                 }
@@ -397,7 +398,7 @@ namespace Domus
                             else if (data == "??\u001f?? ??\u0018??'??\u0001??\u0003??\u0003")//se um cliente tentar se conectar na porta de devices
                             {
                                 ConsoleWrite("Connection denied to client {0}. Wrong connection port.", true, me.clientIP, data);
-                                ClientWrite(stream, "Connection Denied. You will be disconnected in 5 seconds.");
+                                ClientWrite(stream, "WrongPort");
                                 Thread.Sleep(5000);
                                 lostConnection = true;
                             }
@@ -483,7 +484,7 @@ namespace Domus
             String data = null;
             NetworkStream stream;
             User user = null;
-            bool lostConnection = false, isLoggedIn = false;
+            bool lostConnection = false, isLoggedIn = false, isClient = false;
             int i, timeOutCounter = 0;
             int timeOutTime = 10 * 60 * 1000;//10 minutos
 
@@ -576,16 +577,28 @@ namespace Domus
                                     {
                                         user = DatabaseHandler.LoginRequest(connectionString, userdata[0]);
                                     }
-                                    catch
+                                    catch(Exception e)
                                     {
+                                        ConsoleWrite("Error to login {0} - {1}", true, me.clientIP, e.Message);
                                         user = null;
                                     }
 
                                     if (user != null && BCrypt.Net.BCrypt.Verify(userdata[1], user.password))
                                     {
-                                        ClientWrite(stream, "sucessfullLogin");
+                                        try
+                                        {
+                                            DatabaseHandler.UpdateUserLastLogin(connectionString, user.userId);
 
-                                        ConsoleWrite("Client at {0} has started to login as {1}", true, me.clientIP, user.username);
+                                            ClientWrite(stream, "sucessfullLogin");
+
+                                            ConsoleWrite("Client at {0} has started to login as {1}", true, me.clientIP, user.username);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            ConsoleWrite("Error to login {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+
+                                            ClientWrite(stream, "wrongLogin");
+                                        }
                                     }
                                     else
                                     {
@@ -602,6 +615,14 @@ namespace Domus
                                     ClientWriteSerialized(stream, user);
 
                                     ConsoleWrite("Client at {0} has logged in as {1}", true, me.clientIP, user.username);
+                                }
+                                else if (data == "shakeback")
+                                {
+                                    ClientWrite(stream, "SendInfos");
+                                }
+                                else if (data == "??\u001f?? ??\u0018??'??\u0001??\u0003??\u0003")
+                                {
+                                    ClientWrite(stream, "ConnectionAccepted");
                                 }
 
                                 //impede o lock do ciclo
@@ -664,9 +685,89 @@ namespace Domus
                 if (cont == 0)
                     ClientWrite(stream, "noDevices");
             }
+            else if (data.Contains("listUsers"))
+            {
+                try
+                {
+                    List<User> Users = DatabaseHandler.GetAllUsers(connectionString);
+
+                    ClientWriteSerialized(stream, Users);
+
+                    ConsoleWrite("Listed all clients to user {0}@{1}", true, user.username, me.clientIP);
+                }
+                catch(Exception e)
+                {
+                    ConsoleWrite("Fail to list all clients to user {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+                }
+            }
+            else if (data.Contains("UpdateUser"))
+            {
+                try
+                {
+                    ClientWrite(stream, "sendUser");
+
+                    ConsoleWrite("User {0}@{1} has sent an UpdateUser request.", true, user.username, me.clientIP);
+
+                    User temp = (User) ClientReadSerilized(stream, 30000);
+
+                    DatabaseHandler.UpdateUser(connectionString,temp);
+
+                    ClientWrite(stream, "UserUpdated");
+
+                    ConsoleWrite("The UpdateUser request from {0}@{1} was successfullycompleted and updated the user {2}.", true, user.username, me.clientIP, temp.username);
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Error on complete UpdateUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+
+                    ClientWrite(stream, "FailToUpdate");
+                }
+            }
+            else if (data.Contains("AddUser"))
+            {
+                try
+                {
+                    ClientWrite(stream, "sendNewUser");
+
+                    ConsoleWrite("User {0}@{1} has sent an UpdateUser request.", true, user.username, me.clientIP);
+
+                    User temp = (User)ClientReadSerilized(stream, 30000);
+
+                    DatabaseHandler.InsertUser(connectionString, temp);
+
+                    ClientWrite(stream, "UserAdded");
+
+                    ConsoleWrite("The UpdateUser request from {0}@{1} was successfullycompleted and updated the user {2}.", true, user.username, me.clientIP, temp.username);
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Error on complete UpdateUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+
+                    ClientWrite(stream, "FailToAdd");
+                }
+            }
+            else if (data.Contains("DeleteUser"))
+            {
+                try
+                {
+                    ConsoleWrite("User {0}@{1} has sent an DeleteUser request.", true, user.username, me.clientIP);
+
+                    DatabaseHandler.DeleteUser(connectionString, Convert.ToInt32(data.Split(";")[1]));
+
+                    ClientWrite(stream, "UserDeleted");
+
+                    ConsoleWrite("The DeleteUser request from {0}@{1} was successfullycompleted and deleted the userId {2}.", true, user.username, me.clientIP, data.Split(";")[1]);
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Error on complete DeleteUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+
+                    ClientWrite(stream, "FailToDelete");
+                }
+            }
             else
             {
-                ClientWrite(stream, "InvalidCommand.");
+                ClientWrite(stream, "InvalidCommand");
                 ConsoleWrite("User {0}@{1} has send: {1}", false, user.username, me.clientIP, data);
             }
         }
@@ -717,6 +818,38 @@ namespace Domus
 
             //envia os dados para o cliente
             stream.Write(userDataBytes, 0, userDataBytes.Length);
+        }
+
+        //Função que le um objeto serializado
+        private static object ClientReadSerilized(NetworkStream stream, int timeout = -1)
+        {
+            byte[] readMsgLen = new byte[4];
+            int dataLen;
+            byte[] readMsgData;
+            BinaryFormatter bf1 = new BinaryFormatter();
+            MemoryStream ms;
+
+            //seta o timeout de leitura dos dados para 30 segundos
+            stream.ReadTimeout = timeout;
+
+            //le o tamanho dos dados que serão recebidos
+            stream.Read(readMsgLen, 0, 4);
+            dataLen = BitConverter.ToInt32(readMsgLen, 0);
+            readMsgData = new byte[dataLen];
+
+            //le os dados que estão sendo recebidos
+            stream.Read(readMsgData, 0, dataLen);
+
+            ms = new MemoryStream(readMsgData);
+            ms.Position = 0;
+
+            //converte os dados recebidos para um objeto
+            object objeto = bf1.Deserialize(ms);
+
+            //seta o timeout para o valor padrão (infinito)
+            stream.ReadTimeout = -1;
+
+            return objeto;
         }
 
         //Garbage colector que limpa a lista de clientes e devices conectados

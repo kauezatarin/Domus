@@ -692,11 +692,11 @@ namespace Domus
 
                     ClientWriteSerialized(stream, Users);
 
-                    ConsoleWrite("Listed all clients to user {0}", true, user.username);
+                    ConsoleWrite("Listed all clients to user {0}@{1}", true, user.username, me.clientIP);
                 }
                 catch(Exception e)
                 {
-                    ConsoleWrite("Fail to list all clients to user {0} - {1}", true, user.username, e.Message);
+                    ConsoleWrite("Fail to list all clients to user {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
                 }
             }
             else if (data.Contains("UpdateUser"))
@@ -720,6 +720,48 @@ namespace Domus
                     ConsoleWrite("Error on complete UpdateUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
 
                     ClientWrite(stream, "FailToUpdate");
+                }
+            }
+            else if (data.Contains("AddUser"))
+            {
+                try
+                {
+                    ClientWrite(stream, "sendNewUser");
+
+                    ConsoleWrite("User {0}@{1} has sent an UpdateUser request.", true, user.username, me.clientIP);
+
+                    User temp = (User)ClientReadSerilized(stream, 30000);
+
+                    DatabaseHandler.InsertUser(connectionString, temp);
+
+                    ClientWrite(stream, "UserAdded");
+
+                    ConsoleWrite("The UpdateUser request from {0}@{1} was successfullycompleted and updated the user {2}.", true, user.username, me.clientIP, temp.username);
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Error on complete UpdateUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+
+                    ClientWrite(stream, "FailToAdd");
+                }
+            }
+            else if (data.Contains("DeleteUser"))
+            {
+                try
+                {
+                    ConsoleWrite("User {0}@{1} has sent an DeleteUser request.", true, user.username, me.clientIP);
+
+                    DatabaseHandler.DeleteUser(connectionString, Convert.ToInt32(data.Split(";")[1]));
+
+                    ClientWrite(stream, "UserDeleted");
+
+                    ConsoleWrite("The DeleteUser request from {0}@{1} was successfullycompleted and deleted the userId {2}.", true, user.username, me.clientIP, data.Split(";")[1]);
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Error on complete DeleteUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+
+                    ClientWrite(stream, "FailToDelete");
                 }
             }
             else

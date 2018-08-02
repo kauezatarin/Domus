@@ -60,7 +60,7 @@ namespace Domus
                     try
                     {
                         conn.Open();
-                        cmd.CommandText = "SELECT * FROM Users WHERE username = '" + username + "'";
+                        cmd.CommandText = "SELECT * FROM Users WHERE username = '" + username + "' AND active = True";
 
                         using (MySqlDataReader dataReader = cmd.ExecuteReader())
                         {
@@ -153,6 +153,28 @@ namespace Domus
                                       "', last_name = '"+ user.lastName + 
                                       "', isAdmin = " + user.isAdmin +
                                       " WHERE user_id=" + user.userId;
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Deleta um usuário no banco
+        /// </summary>
+        public static void DeleteUser(string connectionString, int userId)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "DELETE FROM users WHERE user_id=" + userId;
 
                     cmd.ExecuteNonQuery();
                 }

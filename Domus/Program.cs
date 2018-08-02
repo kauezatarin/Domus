@@ -705,7 +705,7 @@ namespace Domus
                 {
                     ClientWrite(stream, "sendUser");
 
-                    ConsoleWrite("User {0}@{1} has sent an UpdateUser reuest.", true, user.username, me.clientIP);
+                    ConsoleWrite("User {0}@{1} has sent an UpdateUser request.", true, user.username, me.clientIP);
 
                     User temp = (User) ClientReadSerilized(stream, 30000);
 
@@ -713,7 +713,7 @@ namespace Domus
 
                     ClientWrite(stream, "UserUpdated");
 
-                    ConsoleWrite("UpdateUser request from {0}@{1} was successfully updated teh user {2}.", true, user.username, me.clientIP, temp.username);
+                    ConsoleWrite("The UpdateUser request from {0}@{1} was successfullycompleted and updated the user {2}.", true, user.username, me.clientIP, temp.username);
                 }
                 catch (Exception e)
                 {

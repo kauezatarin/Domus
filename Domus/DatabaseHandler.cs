@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using DomusSharedClasses;
 //Add MySql Library
 using MySql.Data.MySqlClient;
@@ -21,7 +22,8 @@ namespace Domus
                 "DATABASE=" + databaseName + ";" +
                 "UID=" + databaseUser + ";" +
                 "PASSWORD=" + databasePassword + ";" +
-                "SslMode = none";
+                "SslMode = none" + ";" +
+                "CharSet=utf8";
 
             return connectionString;
         }

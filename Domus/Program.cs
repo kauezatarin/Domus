@@ -577,8 +577,9 @@ namespace Domus
                                     {
                                         user = DatabaseHandler.LoginRequest(connectionString, userdata[0]);
                                     }
-                                    catch
+                                    catch(Exception e)
                                     {
+                                        ConsoleWrite("Error to login {0} - {1}", true, me.clientIP, e.Message);
                                         user = null;
                                     }
 

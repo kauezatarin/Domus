@@ -60,7 +60,7 @@ namespace Domus
                     try
                     {
                         conn.Open();
-                        cmd.CommandText = "SELECT * FROM Users WHERE username = '" + username + "' AND active = True";
+                        cmd.CommandText = "SELECT * FROM users WHERE username = '" + username + "' AND active = True";
 
                         using (MySqlDataReader dataReader = cmd.ExecuteReader())
                         {

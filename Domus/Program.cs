@@ -583,25 +583,34 @@ namespace Domus
                                         user = null;
                                     }
 
-                                    if (user != null && BCrypt.Net.BCrypt.Verify(userdata[1], user.password))
+                                    try
                                     {
-                                        try
+                                        if (user != null && BCrypt.Net.BCrypt.Verify(userdata[1], user.password))
                                         {
-                                            DatabaseHandler.UpdateUserLastLogin(connectionString, user.userId);
+                                            try
+                                            {
+                                                DatabaseHandler.UpdateUserLastLogin(connectionString, user.userId);
 
-                                            ClientWrite(stream, "sucessfullLogin");
+                                                ClientWrite(stream, "sucessfullLogin");
 
-                                            ConsoleWrite("Client at {0} has started to login as {1}", true, me.clientIP, user.username);
+                                                ConsoleWrite("Client at {0} has started to login as {1}", true, me.clientIP, user.username);
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                ConsoleWrite("Error to login {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+
+                                                ClientWrite(stream, "wrongLogin");
+                                            }
                                         }
-                                        catch (Exception e)
+                                        else
                                         {
-                                            ConsoleWrite("Error to login {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
-
                                             ClientWrite(stream, "wrongLogin");
                                         }
                                     }
-                                    else
+                                    catch (Exception e)
                                     {
+                                        ConsoleWrite("Error to login {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+
                                         ClientWrite(stream, "wrongLogin");
                                     }
                                 }
@@ -763,6 +772,53 @@ namespace Domus
                     ConsoleWrite("Error on complete DeleteUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
 
                     ClientWrite(stream, "FailToDelete");
+                }
+            }
+            else if (data.Contains("ChangePasswd"))
+            {
+                try
+                {
+                    ConsoleWrite("User {0}@{1} has sent an ChangePasswd request.", true, user.username, me.clientIP);
+
+                    if (!BCrypt.Net.BCrypt.Verify(data.Split(";")[1], DatabaseHandler.GetUserById(connectionString, user.userId).password))
+                    {
+                        ClientWrite(stream, "InvalidOldPasswd");
+
+                        ConsoleWrite("Error on complete ChangePasswd request from client {0}@{1} - Wrong password.", false, user.username, me.clientIP);
+
+                        return;
+                    }
+
+                    DatabaseHandler.ChangeUserPasswd(connectionString, user.userId, data.Split(";")[2]);
+
+                    ClientWrite(stream, "PasswdChanged");
+
+                    ConsoleWrite("The ChangePasswd request from {0}@{1} was successfullycompleted.", true, user.username, me.clientIP);
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Error on complete ChangePasswd request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+
+                    ClientWrite(stream, "FailToChangePasswd");
+                }
+            }
+            else if (data.Contains("ResetPasswd"))
+            {
+                try
+                {
+                    ConsoleWrite("User {0}@{1} has sent an ResetPasswd request.", true, user.username, me.clientIP);
+
+                    DatabaseHandler.ChangeUserPasswd(connectionString, Convert.ToInt32(data.Split(";")[1]), data.Split(";")[2]);
+
+                    ClientWrite(stream, "PasswdReseted");
+
+                    ConsoleWrite("The ResetPasswd request from {0}@{1} was successfullycompleted and reseted the passwrod for userId {2}.", true, user.username, me.clientIP, data.Split(";")[1]);
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Error on complete ResetPasswd request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+
+                    ClientWrite(stream, "FailToResetPasswd");
                 }
             }
             else

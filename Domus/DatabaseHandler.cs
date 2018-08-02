@@ -164,6 +164,63 @@ namespace Domus
         }
 
         /// <summary>
+        /// Altera a senha de um usuário no banco
+        /// </summary>
+        public static void ChangeUserPasswd(string connectionString, int userId, string passwd)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "UPDATE users SET password = '" +
+                                      passwd +
+                                      "' WHERE user_id=" + userId;
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retorna um usuário que corresponde ao id informado
+        /// </summary>
+        public static User GetUserById(string connectionString, int userId)
+        {
+            User user = null;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM users WHERE user_id = " + userId;
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            dataReader.Read();
+                            user = Maper.MapUser(dataReader);
+                        }
+
+                        return user;
+                    }
+                    catch (MySqlException e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
+        /// <summary>
         /// Deleta um usuário no banco
         /// </summary>
         public static void DeleteUser(string connectionString, int userId)

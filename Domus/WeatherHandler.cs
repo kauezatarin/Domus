@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System.Xml;
+using DomusSharedClasses;
 
 namespace Domus
 {
@@ -30,7 +31,7 @@ namespace Domus
 
         private string APIKey { get; set; }
 
-        public Forecast CheckWeather()
+        public Forecast CheckForecast()
         {
             Forecast forecast = null;
 
@@ -52,20 +53,25 @@ namespace Domus
     class WeatherAPI
     {
         private static string APIKEY;
-        private string CurrentURL;
-        private XmlDocument xmlDocument;
+        private string CurrentForecastURL;
+        private string CurrentWeatherURL;
+        private XmlDocument xmlDocumentForecast;//stores the 5 days forecast
+        private XmlDocument xmlDocumentWeather;//stores the todays weather ddata
 
         public WeatherAPI(string location, string apiKey)
         {
             APIKEY = apiKey;
             SetCurrentURL(location);
-            xmlDocument = GetXML(CurrentURL);
+            xmlDocumentForecast = GetXML(CurrentForecastURL);
         }
 
         private void SetCurrentURL(string location)
         {
-            CurrentURL = "http://api.openweathermap.org/data/2.5/forecast?q="
+            CurrentForecastURL = "http://api.openweathermap.org/data/2.5/forecast?q="
                          + location + "&mode=xml&lang=pt&units=metric&APPID=" + APIKEY;
+
+            CurrentWeatherURL = "http://api.openweathermap.org/data/2.5/weather?q="
+                                + location + "&mode=xml&lang=pt&units=metric&APPID=" + APIKEY;
 
         }
 
@@ -80,34 +86,36 @@ namespace Domus
             }
         }
 
+        #region ForecastMethods
+
         public Forecast GetForecast()
         {
-            List<string> locationData = getLocationData();
-            List<DateTime> sunData = getSunData();
+            List<string> locationData = getForecastLocationData();
+            List<DateTime> sunData = getForecastSunData();
             List<ForecastData> forecastDatas = getForecastDatas();
 
-            return new Forecast(locationData,sunData,forecastDatas);
+            return new Forecast(locationData, sunData, forecastDatas);
         }
 
-        private List<string> getLocationData()
+        private List<string> getForecastLocationData()
         {
             List<string> data = new List<string>();
 
-            data.Add(xmlDocument.SelectSingleNode("//location//name").FirstChild.Value);//resgata o nome da cidade
-            data.Add(xmlDocument.SelectSingleNode("//location//country").FirstChild.Value);//resgata o nome do país
+            data.Add(xmlDocumentForecast.SelectSingleNode("//location//name").FirstChild.Value);//resgata o nome da cidade
+            data.Add(xmlDocumentForecast.SelectSingleNode("//location//country").FirstChild.Value);//resgata o nome do país
 
-            data.Add(xmlDocument.SelectSingleNode("//location//location").Attributes["latitude"].Value);//resgata a latitude da localização
-            data.Add(xmlDocument.SelectSingleNode("//location//location").Attributes["longitude"].Value);//resgata a longitude da localização
+            data.Add(xmlDocumentForecast.SelectSingleNode("//location//location").Attributes["latitude"].Value);//resgata a latitude da localização
+            data.Add(xmlDocumentForecast.SelectSingleNode("//location//location").Attributes["longitude"].Value);//resgata a longitude da localização
 
             return data;
         }
 
-        private List<DateTime> getSunData()
+        private List<DateTime> getForecastSunData()
         {
             List<DateTime> data = new List<DateTime>();
 
-            data.Add(GenerateDatetime(xmlDocument.SelectSingleNode("//sun").Attributes["rise"].Value));//resgata a latitude da localização
-            data.Add(GenerateDatetime(xmlDocument.SelectSingleNode("//sun").Attributes["set"].Value));//resgata a longitude da localização
+            data.Add(GenerateDatetime(xmlDocumentForecast.SelectSingleNode("//sun").Attributes["rise"].Value));//resgata a latitude da localização
+            data.Add(GenerateDatetime(xmlDocumentForecast.SelectSingleNode("//sun").Attributes["set"].Value));//resgata a longitude da localização
 
             return data;
         }
@@ -115,13 +123,13 @@ namespace Domus
         private List<ForecastData> getForecastDatas()
         {
             List<ForecastData> data = new List<ForecastData>();
-            XmlNodeList nodes = xmlDocument.SelectSingleNode("//forecast").ChildNodes;
+            XmlNodeList nodes = xmlDocumentForecast.SelectSingleNode("//forecast").ChildNodes;
 
             string fromData;
             string toData;
             string value;
             string type;
-            
+
             foreach (XmlNode node in nodes)
             {
                 fromData = node.Attributes["from"].Value;
@@ -129,7 +137,7 @@ namespace Domus
 
                 XmlNodeList tempnodes = node.ChildNodes;
 
-                if(tempnodes[1].Attributes.Count > 0)
+                if (tempnodes[1].Attributes.Count > 0)
                 {
                     value = tempnodes[1].Attributes["value"].Value.Replace(".", ",");
                     type = tempnodes[1].Attributes["type"].Value;
@@ -140,12 +148,49 @@ namespace Domus
                     type = "none";
                 }
 
-                data.Add(new ForecastData(GenerateDatetime(fromData),GenerateDatetime(toData), Convert.ToSingle(value), type));
+                data.Add(new ForecastData(GenerateDatetime(fromData), GenerateDatetime(toData), Convert.ToSingle(value), type));
             }
 
 
             return data;
         }
+
+        #endregion
+
+        #region WeatherMethods
+
+        public Forecast GetWeather()
+        {
+            List<string> locationData = getWeatherLocationData();
+            WeatherData forecastDatas = getWeatherData();
+            string icon = getWeatherIcon();
+
+            return new Forecast(locationData, forecastDatas, icon);
+        }
+
+        private List<string> getWeatherLocationData()
+        {
+            List<string> data = new List<string>();
+
+            data.Add(xmlDocumentWeather.SelectSingleNode("//city").Attributes["name"].Value);//resgata o nome da cidade
+            data.Add(xmlDocumentWeather.SelectSingleNode("//city//country").FirstChild.Value);//resgata o nome do país
+
+            data.Add(xmlDocumentWeather.SelectSingleNode("//city//coord").Attributes["lat"].Value);//resgata a latitude da localização
+            data.Add(xmlDocumentWeather.SelectSingleNode("//city//coord").Attributes["lon"].Value);//resgata a longitude da localização
+
+            return data;
+        }
+
+        private WeatherData getWeatherData()
+        {
+            WeatherData data;
+
+
+
+            return data;
+        }
+
+        #endregion
 
         private DateTime GenerateDatetime(string dataString, bool returnGMT = false)
         {

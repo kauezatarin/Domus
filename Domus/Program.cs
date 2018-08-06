@@ -86,7 +86,7 @@ namespace Domus
 
                 try
                 {
-                    forecast = Weather.CheckWeather();
+                    forecast = Weather.CheckForecast();
 
                     ConsoleWrite("Successfully acquired forecasts for {0},{1} ({2};{3}) ", true, forecast.Location_Name,
                         forecast.Location_Country, forecast.Location_Latitude, forecast.Location_Longitude);

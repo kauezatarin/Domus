@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Domus
+namespace DomusSharedClasses
 {
-    class ForecastData
+    public class ForecastData
     {
         public DateTime Time_From { get; private set; }
 

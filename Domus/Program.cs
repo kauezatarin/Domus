@@ -821,6 +821,21 @@ namespace Domus
                     ClientWrite(stream, "FailToResetPasswd");
                 }
             }
+            else if (data.Contains("getWeather"))
+            {
+                try
+                {
+                    Forecast weather = Weather.CheckWeather();
+
+                    ClientWriteSerialized(stream, weather);
+
+                    ConsoleWrite("Weather sent to user {0}@{1}", true, user.username, me.clientIP);
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Fail to sent weather to user {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+                }
+            }
             else
             {
                 ClientWrite(stream, "InvalidCommand");

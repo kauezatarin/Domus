@@ -4,6 +4,7 @@ using System.Text;
 
 namespace DomusSharedClasses
 {
+    [Serializable]
     public class ForecastData
     {
         public DateTime Time_From { get; private set; }

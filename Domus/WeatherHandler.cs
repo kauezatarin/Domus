@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System.Xml;
+using DomusSharedClasses;
 
 namespace Domus
 {
@@ -30,7 +31,7 @@ namespace Domus
 
         private string APIKey { get; set; }
 
-        public Forecast CheckWeather()
+        public Forecast CheckForecast()
         {
             Forecast forecast = null;
 
@@ -47,25 +48,47 @@ namespace Domus
 
             return forecast;
         }
+
+        public WeatherData CheckWeather()
+        {
+            WeatherData weather = null;
+
+            try
+            {
+                WeatherAPI DataAPI = new WeatherAPI(City + "," + Country, APIKey, true);//gets current weather instead of 5 days forecast
+
+                weather = DataAPI.GetWeather();
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+
+            return weather;
+        }
     }
 
     class WeatherAPI
     {
         private static string APIKEY;
-        private string CurrentURL;
+        private string CurrentForecastURL;
+        private string CurrentWeatherURL;
         private XmlDocument xmlDocument;
 
-        public WeatherAPI(string location, string apiKey)
+        public WeatherAPI(string location, string apiKey, bool getWeather = false)
         {
             APIKEY = apiKey;
             SetCurrentURL(location);
-            xmlDocument = GetXML(CurrentURL);
+            xmlDocument = getWeather ? GetXML(CurrentWeatherURL) : GetXML(CurrentForecastURL);
         }
 
         private void SetCurrentURL(string location)
         {
-            CurrentURL = "http://api.openweathermap.org/data/2.5/forecast?q="
+            CurrentForecastURL = "http://api.openweathermap.org/data/2.5/forecast?q="
                          + location + "&mode=xml&lang=pt&units=metric&APPID=" + APIKEY;
+
+            CurrentWeatherURL = "http://api.openweathermap.org/data/2.5/weather?q="
+                                + location + "&mode=xml&lang=pt&units=metric&APPID=" + APIKEY;
 
         }
 
@@ -80,16 +103,19 @@ namespace Domus
             }
         }
 
+        #region ForecastMethods
+
+        //return the 5 days forecast
         public Forecast GetForecast()
         {
-            List<string> locationData = getLocationData();
-            List<DateTime> sunData = getSunData();
+            List<string> locationData = getForecastLocationData();
+            List<DateTime> sunData = getForecastSunData();
             List<ForecastData> forecastDatas = getForecastDatas();
 
-            return new Forecast(locationData,sunData,forecastDatas);
+            return new Forecast(locationData, sunData, forecastDatas);
         }
 
-        private List<string> getLocationData()
+        private List<string> getForecastLocationData()
         {
             List<string> data = new List<string>();
 
@@ -102,7 +128,7 @@ namespace Domus
             return data;
         }
 
-        private List<DateTime> getSunData()
+        private List<DateTime> getForecastSunData()
         {
             List<DateTime> data = new List<DateTime>();
 
@@ -121,7 +147,7 @@ namespace Domus
             string toData;
             string value;
             string type;
-            
+
             foreach (XmlNode node in nodes)
             {
                 fromData = node.Attributes["from"].Value;
@@ -129,7 +155,7 @@ namespace Domus
 
                 XmlNodeList tempnodes = node.ChildNodes;
 
-                if(tempnodes[1].Attributes.Count > 0)
+                if (tempnodes[1].Attributes.Count > 0)
                 {
                     value = tempnodes[1].Attributes["value"].Value.Replace(".", ",");
                     type = tempnodes[1].Attributes["type"].Value;
@@ -140,12 +166,54 @@ namespace Domus
                     type = "none";
                 }
 
-                data.Add(new ForecastData(GenerateDatetime(fromData),GenerateDatetime(toData), Convert.ToSingle(value), type));
+                data.Add(new ForecastData(GenerateDatetime(fromData), GenerateDatetime(toData), Convert.ToSingle(value), type));
             }
 
 
             return data;
         }
+
+        #endregion
+
+        #region WeatherMethods
+
+        //todays weather
+        public WeatherData GetWeather()
+        {
+            WeatherData forecastDatas = getWeatherData();
+
+            return forecastDatas;
+        }
+
+        private WeatherData getWeatherData()
+        {
+            WeatherData data = new WeatherData();
+
+            data.LocationCity = xmlDocument.SelectSingleNode("//city").Attributes["name"].Value;//resgata o nome da cidade
+            data.LocationCountry = xmlDocument.SelectSingleNode("//city//country").FirstChild.Value;//resgata o nome do país
+
+            data.Temperature = Convert.ToSingle(xmlDocument.SelectSingleNode("//temperature").Attributes["value"].Value);
+            data.MaxTemperature = Convert.ToSingle(xmlDocument.SelectSingleNode("//temperature").Attributes["max"].Value);
+            data.MinTemperature = Convert.ToSingle(xmlDocument.SelectSingleNode("//temperature").Attributes["min"].Value);
+            data.TemperatureUnit = xmlDocument.SelectSingleNode("//temperature").Attributes["unit"].Value;
+
+            data.Humidity = Convert.ToSingle(xmlDocument.SelectSingleNode("//humidity ").Attributes["value"].Value);
+
+            data.PrecipitationMode = xmlDocument.SelectSingleNode("//precipitation").Attributes["mode"].Value;
+
+            if(data.PrecipitationMode != "no")
+                data.PrecipitationValue = Convert.ToInt32(xmlDocument.SelectSingleNode("//precipitation").Attributes["value"].Value);
+
+            data.Pressure = Convert.ToSingle(xmlDocument.SelectSingleNode("//pressure").Attributes["value"].Value);
+            data.PressureUnit = xmlDocument.SelectSingleNode("//pressure").Attributes["unit"].Value;
+
+            data.IconDescription = xmlDocument.SelectSingleNode("//weather").Attributes["value"].Value;
+            data.IconValue = xmlDocument.SelectSingleNode("//weather").Attributes["icon"].Value;
+
+            return data;
+        }
+
+        #endregion
 
         private DateTime GenerateDatetime(string dataString, bool returnGMT = false)
         {

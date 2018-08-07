@@ -86,7 +86,7 @@ namespace Domus
 
                 try
                 {
-                    forecast = Weather.CheckWeather();
+                    forecast = Weather.CheckForecast();
 
                     ConsoleWrite("Successfully acquired forecasts for {0},{1} ({2};{3}) ", true, forecast.Location_Name,
                         forecast.Location_Country, forecast.Location_Latitude, forecast.Location_Longitude);
@@ -819,6 +819,21 @@ namespace Domus
                     ConsoleWrite("Error on complete ResetPasswd request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
 
                     ClientWrite(stream, "FailToResetPasswd");
+                }
+            }
+            else if (data.Contains("getWeather"))
+            {
+                try
+                {
+                    WeatherData weather = Weather.CheckWeather();
+
+                    ClientWriteSerialized(stream, weather);
+
+                    ConsoleWrite("Weather sent to user {0}@{1}", true, user.username, me.clientIP);
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Fail to sent weather to user {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
                 }
             }
             else

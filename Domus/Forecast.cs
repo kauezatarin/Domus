@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Domus
+namespace DomusSharedClasses
 {
-    class Forecast
+    public class Forecast
     {
         public string Location_Name { get; private set; }
 
@@ -27,8 +27,10 @@ namespace Domus
             Location_Country = locationCountry;
             Location_Latitude = locationLatitude;
             Location_Longitude = locationLongitude;
+
             Sun_Rise = sunRise;
             Sun_Set = sunSet;
+
             Forecasts = forecasts;
         }
 
@@ -44,6 +46,5 @@ namespace Domus
 
             Forecasts = forecastDatas;
         }
-
     }
 }

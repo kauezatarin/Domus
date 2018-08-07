@@ -825,7 +825,7 @@ namespace Domus
             {
                 try
                 {
-                    Forecast weather = Weather.CheckWeather();
+                    WeatherData weather = Weather.CheckWeather();
 
                     ClientWriteSerialized(stream, weather);
 

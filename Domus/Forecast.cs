@@ -5,7 +5,6 @@ using System.Text;
 
 namespace DomusSharedClasses
 {
-    [Serializable]
     public class Forecast
     {
         public string Location_Name { get; private set; }
@@ -21,8 +20,6 @@ namespace DomusSharedClasses
         public DateTime Sun_Set { get; private set; }
 
         public List<ForecastData> Forecasts {get; private set;}
-
-        public WeatherData Weather { get; private set; }
 
         public Forecast(string locationName, string locationCountry, string locationLatitude, string locationLongitude, DateTime sunRise, DateTime sunSet, List<ForecastData> forecasts)
         {
@@ -49,16 +46,5 @@ namespace DomusSharedClasses
 
             Forecasts = forecastDatas;
         }
-
-        public Forecast(List<string> locationData, WeatherData weatherData)
-        {
-            Location_Name = locationData[0];
-            Location_Country = locationData[1];
-            Location_Latitude = locationData[2];
-            Location_Longitude = locationData[3];
-
-            Weather = weatherData;
-        }
-
     }
 }

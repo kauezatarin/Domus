@@ -49,9 +49,9 @@ namespace Domus
             return forecast;
         }
 
-        public Forecast CheckWeather()
+        public WeatherData CheckWeather()
         {
-            Forecast weather = null;
+            WeatherData weather = null;
 
             try
             {
@@ -178,30 +178,19 @@ namespace Domus
         #region WeatherMethods
 
         //todays weather
-        public Forecast GetWeather()
+        public WeatherData GetWeather()
         {
-            List<string> locationData = getWeatherLocationData();
             WeatherData forecastDatas = getWeatherData();
 
-            return new Forecast(locationData, forecastDatas);
-        }
-
-        private List<string> getWeatherLocationData()
-        {
-            List<string> data = new List<string>();
-
-            data.Add(xmlDocument.SelectSingleNode("//city").Attributes["name"].Value);//resgata o nome da cidade
-            data.Add(xmlDocument.SelectSingleNode("//city//country").FirstChild.Value);//resgata o nome do país
-
-            data.Add(xmlDocument.SelectSingleNode("//city//coord").Attributes["lat"].Value);//resgata a latitude da localização
-            data.Add(xmlDocument.SelectSingleNode("//city//coord").Attributes["lon"].Value);//resgata a longitude da localização
-
-            return data;
+            return forecastDatas;
         }
 
         private WeatherData getWeatherData()
         {
             WeatherData data = new WeatherData();
+
+            data.LocationCity = xmlDocument.SelectSingleNode("//city").Attributes["name"].Value;//resgata o nome da cidade
+            data.LocationCountry = xmlDocument.SelectSingleNode("//city//country").FirstChild.Value;//resgata o nome do país
 
             data.Temperature = Convert.ToSingle(xmlDocument.SelectSingleNode("//temperature").Attributes["value"].Value);
             data.MaxTemperature = Convert.ToSingle(xmlDocument.SelectSingleNode("//temperature").Attributes["max"].Value);
@@ -218,6 +207,7 @@ namespace Domus
             data.Pressure = Convert.ToSingle(xmlDocument.SelectSingleNode("//pressure").Attributes["value"].Value);
             data.PressureUnit = xmlDocument.SelectSingleNode("//pressure").Attributes["unit"].Value;
 
+            data.IconDescription = xmlDocument.SelectSingleNode("//weather").Attributes["value"].Value;
             data.IconValue = xmlDocument.SelectSingleNode("//weather").Attributes["icon"].Value;
 
             return data;

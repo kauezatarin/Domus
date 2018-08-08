@@ -26,6 +26,7 @@ namespace Domus
         private static string connectionString;
         private static WeatherHandler Weather;
         private static Forecast forecast;
+        private static TaskScheduler scheduler = new TaskScheduler();//scheduler.scheduleTask(DateTime.Now + new TimeSpan(0, 0, 10), async ()=> {Teste();}, "Hourly");
 
         static void Main(string[] args)
         {
@@ -34,7 +35,7 @@ namespace Domus
             Thread deviceListener = null;
             Thread clientListener = null;
             Thread connectionCleaner = null;
-
+            
             Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
 
@@ -94,6 +95,23 @@ namespace Domus
                 catch (Exception e)
                 {
                     ConsoleWrite("Fail to acquire forecast informations for {0},{1} ==> {2}", true, config.cityName, config.countryId, e.Message);
+                }
+
+                try
+                {
+                    ConsoleWrite("Scheduling server tasks", true);
+
+                    DateTime temp = DateTime.Now;
+                    temp = temp.Subtract(new TimeSpan(temp.Hour, temp.Minute, temp.Second));//turns ascheduler time to 00:00:00
+                    temp = temp.AddDays(1);
+
+                    scheduler.ScheduleTask(temp, RefreshForecast, "Daily");
+
+                    ConsoleWrite("Tasks scheduled", true);
+                }
+                catch (Exception e)
+                {
+                    ConsoleWrite("Fail to schedule server tasks -> {0}", true,e.Message);
                 }
 
                 connectionCleaner = new Thread(() => ClearConnectionList());
@@ -846,14 +864,14 @@ namespace Domus
         //Função para printar no console
         private static void ConsoleWrite(string message, bool logThis, params object[] args)
         {
-            message = DateTime.Now.ToString(new CultureInfo("pt-BR")) + " - " + message;
-
-            Console.WriteLine(message, args);
-
             if (logThis || config.forceLog)
             {
                 logger.AddLog(message, args);
             }
+
+            message = DateTime.Now.ToString(new CultureInfo("pt-BR")) + " - " + message;
+
+            Console.WriteLine(message, args);
 
         }
 
@@ -921,6 +939,24 @@ namespace Domus
             stream.ReadTimeout = -1;
 
             return objeto;
+        }
+
+        //Função que atualiza a previsão do tempo
+        static async Task RefreshForecast()
+        {
+            ConsoleWrite("Updating forecast informations", true);
+
+            try
+            {
+                forecast = Weather.CheckForecast();
+
+                ConsoleWrite("Successfully updated forecasts for {0},{1} ({2};{3}) ", true, forecast.Location_Name,
+                    forecast.Location_Country, forecast.Location_Latitude, forecast.Location_Longitude);
+            }
+            catch (Exception e)
+            {
+                ConsoleWrite("Fail to update forecast informations for {0},{1} ==> {2}", true, config.cityName, config.countryId, e.Message);
+            }
         }
 
         //Garbage colector que limpa a lista de clientes e devices conectados

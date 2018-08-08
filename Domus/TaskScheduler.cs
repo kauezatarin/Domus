@@ -9,8 +9,7 @@ namespace Domus
 {
     class TaskScheduler
     {
-        List<ScheduledTask> tasksTimers = new List<ScheduledTask>();
-        BlockingCollection<SchedulerRequest> schedulerReuestsQueue = new BlockingCollection<SchedulerRequest>(new ConcurrentQueue<SchedulerRequest>());
+        BlockingCollection<ScheduledTask> scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
         private Thread schedulerWorker;
 
         public TaskScheduler()
@@ -20,52 +19,34 @@ namespace Domus
             schedulerWorker.Start();
         }
 
-        public int scheduleTask(DateTime runDateTime, Func<Task> taskFunc)
+        public bool scheduleTask(DateTime runDateTime, Func<Task> taskFunc, string repeat = "no")
         {
-            int taskId;
-
-            try
-            {
-                ScheduledTask temp = new ScheduledTask(runDateTime, taskFunc);
-
-                tasksTimers.Add(temp);
-
-                taskId = tasksTimers.IndexOf(temp);
-            }
-            catch (Exception e)
-            {
-                taskId = -1;
-            }
-
-            return taskId;
+            ScheduledTask temp = new ScheduledTask(runDateTime, taskFunc, repeat);
+            
+            return scheduledTasks.TryAdd(temp);
         }
 
-        public void renewTask(int taskIndex, DateTime renewTo)
+        public DateTime GetRenewDate(DateTime actualTriggerDate, string repeat)
         {
-            schedulerReuestsQueue.Add(new SchedulerRequest(taskIndex, renewTo));
-        }
-
-        public bool renewTask(int taskIndex, string renewTo)
-        {
-            if (renewTo == "nextWeek")
+            if (repeat == "Weekly")
             {
-                return tasksTimers[taskIndex].renew(GetNextWeekday(tasksTimers[taskIndex].TriggerDate, tasksTimers[taskIndex].TriggerDate.DayOfWeek));
+                return GetNextWeekday(actualTriggerDate, actualTriggerDate.DayOfWeek);
             }
-            else if (renewTo == "nextDay")
+            else if (repeat == "Daily")
             {
-                return tasksTimers[taskIndex].renew(tasksTimers[taskIndex].TriggerDate + new TimeSpan(1,0,0,0));
+                return actualTriggerDate + new TimeSpan(1,0,0,0);
             }
-            else if (renewTo == "nextHour")
+            else if (repeat == "Hourly")
             {
-                return tasksTimers[taskIndex].renew(tasksTimers[taskIndex].TriggerDate + new TimeSpan(0, 1, 0, 0));
+                return actualTriggerDate + new TimeSpan(0, 1, 0, 0);
             }
-            else if (renewTo == "nextHafHour")
+            else if (repeat == "HafHourly")
             {
-                return tasksTimers[taskIndex].renew(tasksTimers[taskIndex].TriggerDate + new TimeSpan(0, 0, 30, 0));
+                return actualTriggerDate + new TimeSpan(0, 0, 30, 0);
             }
             else
             {
-                return false;
+                throw new Exception("Renew mode '"+ repeat +"' not found.");
             }
         }
 
@@ -80,19 +61,25 @@ namespace Domus
         {
             while (true)
             {
-                SchedulerRequest temp;
+                ScheduledTask temp;
+                int tasksCount = scheduledTasks.Count;
 
-                while (schedulerReuestsQueue.Count > 0)
+                for(int i=0; i < tasksCount; i++)
                 {
-                    schedulerReuestsQueue.TryTake(out temp);
+                    scheduledTasks.TryTake(out temp);
 
-                    if (temp.Args[1].GetType() == typeof(string))
+                    if (temp.Scheduler.Enabled == false)//if times is stopped
                     {
-                        renewTask((int) temp.Args[0], (string) temp.Args[1]);
-                    }
-                    else if (temp.Args[1].GetType() == typeof(DateTime))
-                    {
-                        renewTask((int)temp.Args[0], (DateTime)temp.Args[1]);
+                        if (temp.Repeat != "no")//and is set to repeat
+                        {
+                            temp.renew(GetRenewDate(temp.TriggerDate,temp.Repeat));//updates trigger time
+
+                            scheduledTasks.Add(temp);//add it back to the list
+                        }
+                        else
+                        {
+                            temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
+                        }
                     }
                 }
 
@@ -103,20 +90,24 @@ namespace Domus
 
     class ScheduledTask
     {
-        public ScheduledTask(DateTime triggerDate, Func<Task> task)
+        public ScheduledTask(DateTime triggerDate, Func<Task> task, string repeat)
         {
             TriggerDate = triggerDate;
 
-            Scheduler = new Timer((triggerDate - DateTime.Now).Milliseconds);
+            Repeat = repeat;
+
+            Scheduler = new System.Timers.Timer((triggerDate - DateTime.Now).Milliseconds);
 
             Scheduler.Elapsed += async (sender, e) => await task();
 
             Scheduler.Start();
         }
 
+        public string Repeat { get; set; }
+
         public DateTime TriggerDate { get; set; }
 
-        private Timer Scheduler { get; set; }
+        public System.Timers.Timer Scheduler { get; set; }
 
         public bool renew(DateTime renewTo)
         {
@@ -135,24 +126,5 @@ namespace Domus
                 return false;
             }
         }
-    }
-
-    class SchedulerRequest
-    {
-        public SchedulerRequest(int taskIndex, params object[] args)
-        {
-            Args = args;
-            TaskIndex = taskIndex;
-        }
-
-        public SchedulerRequest( params object[] args)
-        {
-            Args = args;
-            TaskIndex = -1;
-        }
-
-        public int TaskIndex { get; set; }
-
-        public object[] Args { get; set; }
     }
 }

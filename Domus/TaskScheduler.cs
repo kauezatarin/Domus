@@ -8,6 +8,7 @@ namespace Domus
     class TaskScheduler
     {
         BlockingCollection<ScheduledTask> scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
+        BlockingCollection<double> deletTasks = new BlockingCollection<double>(new ConcurrentQueue<double>());
         private Thread schedulerWorker;
         private bool cancelAll = false;
         private double idCounter = 0;
@@ -19,7 +20,7 @@ namespace Domus
             schedulerWorker.Start();
         }
 
-        public double scheduleTask(DateTime runDateTime, Func<Task> taskFunc, string repeat = "no")
+        public double ScheduleTask(DateTime runDateTime, Func<Task> taskFunc, string repeat = "no")
         {
             double taskId = GetNextId();
 
@@ -27,9 +28,33 @@ namespace Domus
 
             temp.Scheduler.AutoReset = false;
 
-            scheduledTasks.TryAdd(temp);
+            bool t = scheduledTasks.TryAdd(temp);
 
             return taskId;
+        }
+
+        public bool DeleteTask(double taskId)
+        {
+            bool success = true;
+
+            ScheduledTask temp;
+            int tasksCount = scheduledTasks.Count;
+
+            try
+            {
+                deletTasks.Add(taskId);
+            }
+            catch
+            {
+                success = false;
+            }
+            
+            return success;
+        }
+
+        public void DeleteAllTasks()
+        {
+            cancelAll = true;
         }
 
         private double GetNextId()
@@ -73,25 +98,76 @@ namespace Domus
             while (true)
             {
                 ScheduledTask temp;
+                double tempId;
                 int tasksCount = scheduledTasks.Count;
+                int toDeleteCount = deletTasks.Count;
 
-                for(int i=0; i < tasksCount; i++)
+                if (toDeleteCount > 0)//case there are itens to delete
                 {
-                    scheduledTasks.TryTake(out temp);
-
-                    if (temp.Scheduler.Enabled == false)//if times is stopped
+                    for (int i = 0; i < toDeleteCount; i++)
                     {
-                        if (temp.Repeat != "no")//and is set to repeat
-                        {
-                            temp.renew(GetRenewDate(temp.TriggerDate,temp.Repeat));//updates trigger time
+                        deletTasks.TryTake(out tempId);
 
-                            scheduledTasks.Add(temp);//add it back to the list
+                        for (int j = 0; j < tasksCount; j++)
+                        {
+                            scheduledTasks.TryTake(out temp);
+
+                            if (temp.TaskId == tempId)//item found
+                            {
+                                if(temp.Scheduler.Enabled)
+                                    temp.Scheduler.Stop();
+
+                                temp.Scheduler.Dispose();
+
+                                break;
+                            }
+                            else
+                            {
+                                scheduledTasks.Add(temp);
+                            }
                         }
-                        else
+
+                    }
+                }
+                else if (!cancelAll)//case the flag cancelAll is false
+                {
+                    for (int i = 0; i < tasksCount; i++)
+                    {
+                        scheduledTasks.TryTake(out temp);
+
+                        if (temp.Scheduler.Enabled == false)//if times is stopped
+                        {
+                            if (temp.Repeat != "no")//and is set to repeat
+                            {
+                                temp.renew(GetRenewDate(temp.TriggerDate, temp.Repeat));//updates trigger time
+
+                                scheduledTasks.Add(temp);//add it back to the list
+                            }
+                            else
+                            {
+                                temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
+                            }
+                        }
+                    }
+                }
+                else//case cancelAll is true
+                {
+                    for (int i = 0; i < tasksCount; i++)
+                    {
+                        scheduledTasks.TryTake(out temp);
+
+                        if (temp.Scheduler.Enabled == false)//if times is stopped
                         {
                             temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
                         }
+                        else
+                        {
+                            temp.Scheduler.Stop();
+                            temp.Scheduler.Dispose();
+                        }
                     }
+
+                    cancelAll = false;
                 }
 
                 Thread.Sleep(3000);

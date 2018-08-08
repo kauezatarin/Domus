@@ -35,6 +35,8 @@ namespace Domus
             Thread deviceListener = null;
             Thread clientListener = null;
             Thread connectionCleaner = null;
+
+            double forecastRefreshTaskId = -1;
             
             Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
@@ -105,7 +107,9 @@ namespace Domus
                     temp = temp.Subtract(new TimeSpan(temp.Hour, temp.Minute, temp.Second));//turns ascheduler time to 00:00:00
                     temp = temp.AddDays(1);
 
-                    scheduler.scheduleTask(temp, RefreshForecast, "Daily");
+                    forecastRefreshTaskId = scheduler.ScheduleTask(temp, RefreshForecast, "Daily");
+
+                    scheduler.DeleteAllTasks();
 
                     ConsoleWrite("Tasks scheduled", true);
                 }

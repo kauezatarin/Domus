@@ -880,14 +880,14 @@ namespace Domus
         //Função para printar no console
         private static void ConsoleWrite(string message, bool logThis, params object[] args)
         {
-            message = DateTime.Now.ToString(new CultureInfo("pt-BR")) + " - " + message;
-
-            Console.WriteLine(message, args);
-
             if (logThis || config.forceLog)
             {
                 logger.AddLog(message, args);
             }
+
+            message = DateTime.Now.ToString(new CultureInfo("pt-BR")) + " - " + message;
+
+            Console.WriteLine(message, args);
 
         }
 

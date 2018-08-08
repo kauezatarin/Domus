@@ -105,23 +105,7 @@ namespace Domus
                     temp = temp.Subtract(new TimeSpan(temp.Hour, temp.Minute, temp.Second));//turns ascheduler time to 00:00:00
                     temp = temp.AddDays(1);
 
-                    scheduler.scheduleTask(temp, async () =>
-                    {
-                        ConsoleWrite("Updating forecast informations", true);
-
-                        try
-                        {
-                            forecast = Weather.CheckForecast();
-
-                            ConsoleWrite("Successfully updated forecasts for {0},{1} ({2};{3}) ", true, forecast.Location_Name,
-                                forecast.Location_Country, forecast.Location_Latitude, forecast.Location_Longitude);
-                        }
-                        catch (Exception e)
-                        {
-                            ConsoleWrite("Fail to update forecast informations for {0},{1} ==> {2}", true, config.cityName, config.countryId, e.Message);
-                        }
-
-                    }, "Daily");
+                    scheduler.scheduleTask(temp, RefreshForecast, "Daily");
 
                     ConsoleWrite("Tasks scheduled", true);
                 }
@@ -955,6 +939,24 @@ namespace Domus
             stream.ReadTimeout = -1;
 
             return objeto;
+        }
+
+        //Função que atualiza a previsão do tempo
+        static async Task RefreshForecast()
+        {
+            ConsoleWrite("Updating forecast informations", true);
+
+            try
+            {
+                forecast = Weather.CheckForecast();
+
+                ConsoleWrite("Successfully updated forecasts for {0},{1} ({2};{3}) ", true, forecast.Location_Name,
+                    forecast.Location_Country, forecast.Location_Latitude, forecast.Location_Longitude);
+            }
+            catch (Exception e)
+            {
+                ConsoleWrite("Fail to update forecast informations for {0},{1} ==> {2}", true, config.cityName, config.countryId, e.Message);
+            }
         }
 
         //Garbage colector que limpa a lista de clientes e devices conectados

@@ -109,7 +109,7 @@ namespace Domus
 
             TaskId = taskId;
 
-            Scheduler = new System.Timers.Timer((triggerDate - DateTime.Now).Milliseconds);
+            Scheduler = new System.Timers.Timer((triggerDate - DateTime.Now).TotalMilliseconds);
 
             Scheduler.Elapsed += async (sender, e) => await task();
 

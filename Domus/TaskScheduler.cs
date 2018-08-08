@@ -37,7 +37,6 @@ namespace Domus
         {
             bool success = true;
 
-            ScheduledTask temp;
             int tasksCount = scheduledTasks.Count;
 
             try

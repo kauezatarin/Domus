@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 
 namespace Domus
 {
@@ -22,11 +20,13 @@ namespace Domus
         public bool scheduleTask(DateTime runDateTime, Func<Task> taskFunc, string repeat = "no")
         {
             ScheduledTask temp = new ScheduledTask(runDateTime, taskFunc, repeat);
-            
+
+            temp.Scheduler.AutoReset = false;
+
             return scheduledTasks.TryAdd(temp);
         }
 
-        public DateTime GetRenewDate(DateTime actualTriggerDate, string repeat)
+        private DateTime GetRenewDate(DateTime actualTriggerDate, string repeat)
         {
             if (repeat == "Weekly")
             {
@@ -34,15 +34,15 @@ namespace Domus
             }
             else if (repeat == "Daily")
             {
-                return actualTriggerDate + new TimeSpan(1,0,0,0);
+                return actualTriggerDate.AddDays(1);
             }
             else if (repeat == "Hourly")
             {
-                return actualTriggerDate + new TimeSpan(0, 1, 0, 0);
+                return actualTriggerDate.AddHours(1);
             }
             else if (repeat == "HafHourly")
             {
-                return actualTriggerDate + new TimeSpan(0, 0, 30, 0);
+                return actualTriggerDate.AddMinutes(30);
             }
             else
             {
@@ -83,7 +83,7 @@ namespace Domus
                     }
                 }
 
-                Thread.Sleep(1000);
+                Thread.Sleep(3000);
             }
         }
     }
@@ -113,7 +113,7 @@ namespace Domus
         {
             try
             {
-                Scheduler.Interval = (DateTime.Now - renewTo).Milliseconds;
+               Scheduler.Interval = (renewTo - DateTime.Now).TotalMilliseconds;
 
                 TriggerDate = renewTo;
 

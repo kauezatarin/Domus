@@ -9,7 +9,7 @@ namespace Domus
     {
         BlockingCollection<ScheduledTask> scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
         private Thread schedulerWorker;
-        private int cancelAll = false;
+        private bool cancelAll = false;
         private double idCounter = 0;
 
         public TaskScheduler()
@@ -21,7 +21,7 @@ namespace Domus
 
         public double scheduleTask(DateTime runDateTime, Func<Task> taskFunc, string repeat = "no")
         {
-            double takId = GetNextId();
+            double taskId = GetNextId();
 
             ScheduledTask temp = new ScheduledTask(runDateTime, taskFunc, repeat, taskId);
 
@@ -29,7 +29,7 @@ namespace Domus
 
             scheduledTasks.TryAdd(temp);
 
-            return takId;
+            return taskId;
         }
 
         private double GetNextId()

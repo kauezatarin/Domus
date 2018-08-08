@@ -9,6 +9,8 @@ namespace Domus
     {
         BlockingCollection<ScheduledTask> scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
         private Thread schedulerWorker;
+        private int cancelAll = false;
+        private double idCounter = 0;
 
         public TaskScheduler()
         {
@@ -17,13 +19,22 @@ namespace Domus
             schedulerWorker.Start();
         }
 
-        public bool scheduleTask(DateTime runDateTime, Func<Task> taskFunc, string repeat = "no")
+        public double scheduleTask(DateTime runDateTime, Func<Task> taskFunc, string repeat = "no")
         {
-            ScheduledTask temp = new ScheduledTask(runDateTime, taskFunc, repeat);
+            double takId = GetNextId();
+
+            ScheduledTask temp = new ScheduledTask(runDateTime, taskFunc, repeat, taskId);
 
             temp.Scheduler.AutoReset = false;
 
-            return scheduledTasks.TryAdd(temp);
+            scheduledTasks.TryAdd(temp);
+
+            return takId;
+        }
+
+        private double GetNextId()
+        {
+            return ++idCounter;
         }
 
         private DateTime GetRenewDate(DateTime actualTriggerDate, string repeat)
@@ -90,11 +101,13 @@ namespace Domus
 
     class ScheduledTask
     {
-        public ScheduledTask(DateTime triggerDate, Func<Task> task, string repeat)
+        public ScheduledTask(DateTime triggerDate, Func<Task> task, string repeat, double taskId)
         {
             TriggerDate = triggerDate;
 
             Repeat = repeat;
+
+            TaskId = taskId;
 
             Scheduler = new System.Timers.Timer((triggerDate - DateTime.Now).Milliseconds);
 
@@ -102,6 +115,8 @@ namespace Domus
 
             Scheduler.Start();
         }
+
+        public double TaskId { get; set; }
 
         public string Repeat { get; set; }
 

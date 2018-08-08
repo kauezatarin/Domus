@@ -28,7 +28,7 @@ namespace Domus
 
             temp.Scheduler.AutoReset = false;
 
-            bool t = scheduledTasks.TryAdd(temp);
+            scheduledTasks.TryAdd(temp);
 
             return taskId;
         }

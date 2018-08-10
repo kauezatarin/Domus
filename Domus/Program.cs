@@ -11,8 +11,11 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using MySql.Data.MySqlClient;
 using DomusSharedClasses;
+using log4net;
+using log4net.Config;
 
 namespace Domus
 {
@@ -41,7 +44,20 @@ namespace Domus
 
             connectionString = DatabaseHandler.CreateConnectionString(config.databaseIP, config.databasePort, config.databaseName, config.databaseUser, config.databasePassword);
             Weather = new WeatherHandler(config.cityName, config.countryId, config.weatherApiKey);// adicionar os parametros na configuração
-            
+
+            XmlDocument log4netConfig = new XmlDocument();
+
+            log4netConfig.Load(File.OpenRead("log4net.config"));
+
+            var repo = log4net.LogManager.CreateRepository(Assembly.GetEntryAssembly(),
+                typeof(log4net.Repository.Hierarchy.Hierarchy));
+
+            XmlConfigurator.Configure(repo, log4netConfig["log4net"]);
+
+            ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+            log.Info("teste");
+
             try
             {
                 Console.Clear();

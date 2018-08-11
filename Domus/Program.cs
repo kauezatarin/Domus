@@ -25,7 +25,6 @@ namespace Domus
         private static BlockingCollection<ConnectionCommandStore> DeviceConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static BlockingCollection<ConnectionCommandStore> ClientConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static ConfigHandler config = new ConfigHandler();
-        private static LogHandler logger = new LogHandler(config);
         private static string connectionString;
         private static WeatherHandler Weather;
         private static Forecast forecast;
@@ -46,16 +45,20 @@ namespace Domus
             connectionString = DatabaseHandler.CreateConnectionString(config.databaseIP, config.databasePort, config.databaseName, config.databaseUser, config.databasePassword);
             Weather = new WeatherHandler(config.cityName, config.countryId, config.weatherApiKey);// adicionar os parametros na configuração
 
+            #region LogStarter
+
             XmlDocument log4netConfig = new XmlDocument();
 
             log4netConfig.Load(File.OpenRead("log4net.config"));
 
-            var repo = log4net.LogManager.CreateRepository(Assembly.GetEntryAssembly(),
+            var repo = LogManager.CreateRepository(Assembly.GetEntryAssembly(),
                 typeof(log4net.Repository.Hierarchy.Hierarchy));
 
             XmlConfigurator.Configure(repo, log4netConfig["log4net"]);
 
-            log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+            log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+            #endregion
 
             try
             {
@@ -183,8 +186,6 @@ namespace Domus
                 log.Info("Saved");
 
                 log.Info("Server Stoped.");
-
-                logger.stopWorkers = true;
 
             }
 

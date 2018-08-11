@@ -21,8 +21,6 @@ namespace Domus
 
         public int minDataDelay { get; private set; } = 30;
 
-        public string logMode { get; private set; } = "all";
-
         public string databaseIP { get; private set; } = "localhost";
 
         public int databasePort { get; private set; } = 3306;
@@ -71,8 +69,6 @@ namespace Domus
                     configWrite.WriteLine("clientListeningPort: 9090");
                     configWrite.WriteLine("deviceListeningPort: 9595");
                     configWrite.WriteLine("minDataDelay: 30");
-                    configWrite.WriteLine(configWrite.NewLine + "#Log Settings. Log modes: info, all, off");
-                    configWrite.WriteLine("logMode: all");
                     configWrite.WriteLine(configWrite.NewLine + "#Database settings:");
                     configWrite.WriteLine("databaseIP: localhost");
                     configWrite.WriteLine("databasePort: 3306");
@@ -147,10 +143,6 @@ namespace Domus
                     else if (line.Contains("minDataDelay"))
                     {
                         minDataDelay = (Convert.ToInt32(line.Split(':')[1].Trim(' ')) * 10) + 100;
-                    }
-                    else if (line.Contains("logMode"))
-                    {
-                        logMode = line.Split(':')[1].Trim(' ');
                     }
                     else if (line.Contains("databaseIP"))
                     {

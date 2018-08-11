@@ -16,6 +16,7 @@ namespace Domus
         public TaskScheduler()
         {
             schedulerWorker = new Thread(SchedulerThread);
+            schedulerWorker.Name = "Scheduler";
             schedulerWorker.IsBackground = true;
             schedulerWorker.Start();
         }

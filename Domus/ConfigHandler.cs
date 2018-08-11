@@ -21,12 +21,6 @@ namespace Domus
 
         public int minDataDelay { get; private set; } = 30;
 
-        public bool logEnabled { get; private set; } = true;
-
-        public bool forceLog { get; private set; } = false;
-
-        public int maxLogSize { get; private set; } = 200;
-
         public string databaseIP { get; private set; } = "localhost";
 
         public int databasePort { get; private set; } = 3306;
@@ -47,7 +41,7 @@ namespace Domus
 
         private string configpath = @"serverConf";
 
-        private string logpath = @"serverLog";
+        private string logConfPath = @"log4net.config";
 
         public ConfigHandler()
         {
@@ -75,12 +69,6 @@ namespace Domus
                     configWrite.WriteLine("clientListeningPort: 9090");
                     configWrite.WriteLine("deviceListeningPort: 9595");
                     configWrite.WriteLine("minDataDelay: 30");
-                    configWrite.WriteLine(configWrite.NewLine + "#Log Settings. Set maxLogSize in MB, -1 to unlimited:");
-                    configWrite.WriteLine("#The 'forceLog' option is used to force the server to write everything to the Log file.");
-                    configWrite.WriteLine("#WARNING: the 'forceLog' option can cause performance issues and memory leak in some cases, use only for debug.");
-                    configWrite.WriteLine("logEnabled: true");
-                    configWrite.WriteLine("forceLog: false");
-                    configWrite.WriteLine("maxLogSize: 200");
                     configWrite.WriteLine(configWrite.NewLine + "#Database settings:");
                     configWrite.WriteLine("databaseIP: localhost");
                     configWrite.WriteLine("databasePort: 3306");
@@ -94,6 +82,16 @@ namespace Domus
                 }
 
             }
+            if (!File.Exists(logConfPath))
+            {
+                // Create a file to write to.
+                using (StreamWriter logConfWrite = File.CreateText(logConfPath))
+                {
+                    logConfWrite.Write("<?xml version=\"1.0\" encoding=\"utf-8\" ?>\r\n<log4net>\r\n  \r\n  <appender name=\"RollingLogFileAppender\" type=\"log4net.Appender.RollingFileAppender\">\r\n    <lockingModel type=\"log4net.Appender.FileAppender+MinimalLock\"/>\r\n    <file value=\"ServerLogs\\\" />\r\n    <datePattern value=\"dd-MM-yyyy.\'txt\'\"/>\r\n    <staticLogFileName value=\"false\"/>\r\n    <appendToFile value=\"true\"/>\r\n    <rollingStyle value=\"Date\"/>\r\n    <maxSizeRollBackups value=\"60\"/>\r\n    <maximumFileSize value=\"15MB\"/>\r\n    <layout type=\"log4net.Layout.PatternLayout\">\r\n      <conversionPattern value=\"%date - [%level] [%thread] - %message%newline%exception\"/>\r\n    </layout>\r\n  </appender>\r\n\r\n  <appender name=\"ConsoleAppender\" type=\"log4net.Appender.ManagedColoredConsoleAppender\">\r\n    <mapping>\r\n      <level value=\"ERROR\" />\r\n      <foreColor value=\"DarkRed\" />\r\n    </mapping>\r\n    <mapping>\r\n      <level value=\"FATAL\" />\r\n      <foreColor value=\"White\" />\r\n      <backColor value=\"Red\" />\r\n    </mapping>\r\n    <mapping>\r\n      <level value=\"WARN\" />\r\n      <foreColor value=\"Yellow\" />\r\n    </mapping>\r\n    <mapping>\r\n      <level value=\"INFO\" />\r\n      <foreColor value=\"White\" />\r\n    </mapping>\r\n    <mapping>\r\n      <level value=\"DEBUG\" />\r\n      <foreColor value=\"Blue\" />\r\n    </mapping>\r\n\r\n    <layout type=\"log4net.Layout.PatternLayout\">\r\n      <conversionPattern value=\"%date - [%level] [%thread] - %message%newline\" />\r\n    </layout>\r\n  </appender>\r\n  \r\n  <root>\r\n    <level value=\"ALL\"/>\r\n    <appender-ref ref=\"RollingLogFileAppender\"/>\r\n    <appender-ref ref=\"ConsoleAppender\" />\r\n  </root>\r\n</log4net>");
+                }
+
+            }
+
 
             LoadConfigs();//must be before log creation
 
@@ -145,18 +143,6 @@ namespace Domus
                     else if (line.Contains("minDataDelay"))
                     {
                         minDataDelay = (Convert.ToInt32(line.Split(':')[1].Trim(' ')) * 10) + 100;
-                    }
-                    else if (line.Contains("logEnabled"))
-                    {
-                        logEnabled = Convert.ToBoolean(line.Split(':')[1].Trim(' '));
-                    }
-                    else if (line.Contains("forceLog"))
-                    {
-                        forceLog = Convert.ToBoolean(line.Split(':')[1].Trim(' '));
-                    }
-                    else if (line.Contains("maxLogSize"))
-                    {
-                        maxLogSize = Convert.ToInt32(line.Split(':')[1].Trim(' '));
                     }
                     else if (line.Contains("databaseIP"))
                     {
@@ -237,16 +223,6 @@ namespace Domus
         public void SaveConfigs()
         {
             SaveBannedIPs();
-        }
-
-        public string GetLogPath()
-        {
-            return logpath;
-        }
-
-        public void DisableLog()
-        {
-            logEnabled = false;
         }
     }
 }

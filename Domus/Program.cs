@@ -11,8 +11,11 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using MySql.Data.MySqlClient;
 using DomusSharedClasses;
+using log4net;
+using log4net.Config;
 
 namespace Domus
 {
@@ -22,11 +25,11 @@ namespace Domus
         private static BlockingCollection<ConnectionCommandStore> DeviceConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static BlockingCollection<ConnectionCommandStore> ClientConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static ConfigHandler config = new ConfigHandler();
-        private static LogHandler logger = new LogHandler(config);
         private static string connectionString;
         private static WeatherHandler Weather;
         private static Forecast forecast;
         private static TaskScheduler scheduler = new TaskScheduler();//scheduler.scheduleTask(DateTime.Now + new TimeSpan(0, 0, 10), async ()=> {Teste();}, "Hourly");
+        private static ILog log;
 
         static void Main(string[] args)
         {
@@ -41,22 +44,39 @@ namespace Domus
 
             connectionString = DatabaseHandler.CreateConnectionString(config.databaseIP, config.databasePort, config.databaseName, config.databaseUser, config.databasePassword);
             Weather = new WeatherHandler(config.cityName, config.countryId, config.weatherApiKey);// adicionar os parametros na configuração
-            
+
+            #region LogStarter
+
+            XmlDocument log4netConfig = new XmlDocument();
+
+            log4netConfig.Load(File.OpenRead("log4net.config"));
+
+            var repo = LogManager.CreateRepository(Assembly.GetEntryAssembly(),
+                typeof(log4net.Repository.Hierarchy.Hierarchy));
+
+            XmlConfigurator.Configure(repo, log4netConfig["log4net"]);
+
+            log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+            #endregion
+
             try
             {
                 Console.Clear();
-                ConsoleWrite("Domus Server - Version: {0}", true, Assembly.GetExecutingAssembly().GetName().Version);
-                ConsoleWrite("To Exit press Ctrl + C.",false);
+                log.Info("Domus Server - Version: " + Assembly.GetExecutingAssembly().GetName().Version);
+                log.Info("To Exit press Ctrl + C.");
 
                 //cria a conexão
-                ConsoleWrite("Creating listeners", true);
-                deviceServer = Connect(config.deviceListeningPort);
-                clientServer = Connect(config.clientListeningPort);
-                
-                if (deviceServer == null || clientServer == null)//se falhar sai do programa
+                log.Info("Creating listeners");
+                try
                 {
-                    ConsoleWrite("Fail to create listeners.",true);
-                    
+                    deviceServer = Connect(config.deviceListeningPort);
+                    clientServer = Connect(config.clientListeningPort);
+                }
+                catch (Exception e)//se falhar sai do programa
+                {
+                    log.Fatal("Fail to create listeners.", e);
+
                     Console.Read();
                     return;
                 }
@@ -68,38 +88,38 @@ namespace Domus
                     //verifica se o banco de dados está ativo
                     try
                     {
-                        ConsoleWrite("Testing database connection on {0}:{1}", true, config.databaseIP, config.databasePort);
+                        log.Info("Testing database connection on " + config.databaseIP + ":" +config.databasePort);
                         DatabaseHandler.TestConnection(connectionString);
                         databasereached = true;
-                        ConsoleWrite("Database Connection success", true);
+                        log.Info("Database Connection success");
                     }
                     catch (MySqlException e)
                     {
-                        ConsoleWrite("Database connection Failure. {0} - {1}", true, e.Number, e.Message);
-                        ConsoleWrite("Retrying in {0} seconds...", true, 30);
+                        log.Error("Database connection Failure. " + e.Number + " - " + e.Message);
+                        log.Info("Retrying in 30 seconds...");
                         Thread.Sleep(30000);
                     }
                 }
                 
 
                 //Tenta resgatar a previsão do tempo
-                ConsoleWrite("Acquiring forecast informations", true);
+                log.Info("Acquiring forecast informations");
 
                 try
                 {
                     forecast = Weather.CheckForecast();
 
-                    ConsoleWrite("Successfully acquired forecasts for {0},{1} ({2};{3}) ", true, forecast.Location_Name,
-                        forecast.Location_Country, forecast.Location_Latitude, forecast.Location_Longitude);
+                    log.Info("Successfully acquired forecasts for " + forecast.Location_Name + "," +
+                             forecast.Location_Country + " (" + forecast.Location_Latitude + ";" + forecast.Location_Longitude + ") ");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Fail to acquire forecast informations for {0},{1} ==> {2}", true, config.cityName, config.countryId, e.Message);
+                    log.Warn("Fail to acquire forecast informations for "+ config.cityName  + ","+ config.countryId + " ==>" + e.Message);
                 }
 
                 try
                 {
-                    ConsoleWrite("Scheduling server tasks", true);
+                    log.Info("Scheduling server tasks");
 
                     DateTime temp = DateTime.Now;
                     temp = temp.Subtract(new TimeSpan(temp.Hour, temp.Minute, temp.Second));//turns ascheduler time to 00:00:00
@@ -107,11 +127,11 @@ namespace Domus
 
                     scheduler.ScheduleTask(temp, RefreshForecast, "Daily");
 
-                    ConsoleWrite("Tasks scheduled", true);
+                    log.Info("Tasks scheduled");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Fail to schedule server tasks -> {0}", true,e.Message);
+                    log.Error("Fail to schedule server tasks -> " + e.Message, e);
                 }
 
                 connectionCleaner = new Thread(() => ClearConnectionList());
@@ -120,7 +140,7 @@ namespace Domus
                 connectionCleaner.Start();
 
                 // starts the listening loop. 
-                ConsoleWrite("Starting device listener on port {0}", true, config.deviceListeningPort);
+                log.Info("Starting device listener on port " + config.deviceListeningPort);
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 deviceListener = new Thread(() => DeviceListenerAsync(deviceServer));
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -128,7 +148,7 @@ namespace Domus
                 deviceListener.Start();
 
                 
-                ConsoleWrite("Starting client listener on port {0}", true, config.clientListeningPort);
+                log.Info("Starting client listener on port " + config.clientListeningPort);
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 clientListener = new Thread(() => ClientListenerAsync(clientServer));
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -139,15 +159,15 @@ namespace Domus
             }
             catch (SocketException e)
             {
-                ConsoleWrite("SocketException: {0}", true, e);
+                log.Fatal("SocketException: " + e.Message, e);
             }
             finally
             {
-                ConsoleWrite("Disconnecting all clients and devices...", true);
+                log.Info("Disconnecting all clients and devices...");
                 desligar = true;
 
                 // Stop listening for new clients.
-                ConsoleWrite("Stopping listeners...", true);
+                log.Info("Stopping listeners...");
 
                 deviceServer.Stop();
                 clientServer.Stop();
@@ -159,15 +179,13 @@ namespace Domus
                 if (clientListener != null && clientListener.IsAlive)
                     clientListener.Join();
 
-                ConsoleWrite("Stopped", true);
+                log.Info("Stopped");
 
-                ConsoleWrite("Saving configs...", true);
+                log.Info("Saving configs...");
                 config.SaveConfigs();
-                ConsoleWrite("Saved", true);
+                log.Info("Saved");
 
-                ConsoleWrite("Server Stoped.", true);
-
-                logger.stopWorkers = true;
+                log.Info("Server Stoped.");
 
             }
 
@@ -192,8 +210,7 @@ namespace Domus
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                return null;
+                throw e;
             }
 
         }
@@ -224,7 +241,7 @@ namespace Domus
             Thread newDevice;
             ConnectionCommandStore temp;
 
-            ConsoleWrite("Waiting for device connection... ", true);
+            log.Info("Waiting for device connection... ");
 
             while (desligar == false)
             {
@@ -270,7 +287,7 @@ namespace Domus
             Thread newClient;
             ConnectionCommandStore temp;
 
-            ConsoleWrite("Waiting for client connection... ", true);
+            log.Info("Waiting for client connection... ");
 
             while (desligar == false)
             {
@@ -321,8 +338,8 @@ namespace Domus
 
             if (!config.bannedIPs.Contains(me.clientIP))
             {
-                ConsoleWrite("Device at " + me.clientIP +
-                             " connected on port {0}", true, device.Client.RemoteEndPoint.ToString().Split(':')[1]);
+                log.Info("Device at " + me.clientIP +
+                             " connected on port " + device.Client.RemoteEndPoint.ToString().Split(':')[1]);
             }
 
             while (device.Connected)
@@ -343,9 +360,9 @@ namespace Domus
                     ClientWrite(stream, "shutdown");
 
                     if (me.deviceUniqueID != null)
-                        ConsoleWrite("Device {0} disconnected by server shutting down command.", true, me.deviceUniqueID);
+                        log.Info("Device "+ me.deviceUniqueID + " disconnected by server shutting down command.");
                     else
-                        ConsoleWrite("Unknown Device from IP {0} disconnected by server shutting down command.", true, me.clientIP);
+                        log.Info("Unknown Device from IP " + me.clientIP + " disconnected by server shutting down command.");
 
                     lostConnection = true;
                 }
@@ -377,14 +394,14 @@ namespace Domus
                                     lostConnection = true; //drop the client
 
                                     ClientWrite(stream, "uidit");//send UID is taken to device
-                                    ConsoleWrite("Device at {0} is tying to connect using an UID that is already taken.", true, me.clientIP);
+                                    log.Info("Device at "+ me.clientIP + " is tying to connect using an UID that is already taken.");
                                 }
                                 else if (!DatabaseHandler.IsAuthenticDevice(connectionString, data.Split(';')[2]))//verify if the device is listed at the database
                                 {
                                     lostConnection = true; //drop the client
 
                                     ClientWrite(stream, "uidnf");//send UID not found to device
-                                    ConsoleWrite("Device at {0} is tying to connect using an UID that is not registered.", true, me.clientIP);
+                                    log.Info("Device at "+ me.clientIP + " is tying to connect using an UID that is not registered.");
                                 }
                                 else//if it has not, then accepts the connection.
                                 {
@@ -410,19 +427,19 @@ namespace Domus
 
                                     tempDevice = null; //free var from memory
 
-                                    ConsoleWrite("Device {0} was identified as '{1}'", true, me.clientIP, me.deviceUniqueID);
+                                    log.Info("Device "+ me.clientIP + " was identified as '" + me.deviceUniqueID + "'");
                                 }
                             }
                             else if (data == "??\u001f?? ??\u0018??'??\u0001??\u0003??\u0003")//se um cliente tentar se conectar na porta de devices
                             {
-                                ConsoleWrite("Connection denied to client {0}. Wrong connection port.", true, me.clientIP, data);
+                                log.Error("Connection denied to client "+ me.clientIP + ". Wrong connection port.");
                                 ClientWrite(stream, "WrongPort");
                                 Thread.Sleep(5000);
                                 lostConnection = true;
                             }
                             else if (data == "shakeback")
                             {
-                                ConsoleWrite("Device {0} has shaked back.", false, me.clientIP, data);
+                                log.Info("Device "+ me.clientIP + " has shaked back.");
                                 getingDeviceInfos = true;
                                 ClientWrite(stream, "SendInfos");//get device infos from device
                             }
@@ -443,7 +460,7 @@ namespace Domus
                                         deviceData.data4 = data.Split(';')[i];
                                 }
 
-                                ConsoleWrite("Device '{0}' has sent: {1}", false, me.deviceUniqueID, data);
+                                log.Info("Device '"+ me.deviceUniqueID + "' has sent: " +  data);
 
                                 //inserir dados no banco
                                 try
@@ -452,7 +469,7 @@ namespace Domus
                                 }
                                 catch (Exception e)
                                 {
-                                    ConsoleWrite("ERROR on insert device {0} data: {1}", true, me.deviceUniqueID, e.Message);
+                                    log.Error("ERROR on insert device "+ me.deviceUniqueID + " data: " + e.Message, e);
                                 }
 
                             }
@@ -465,7 +482,7 @@ namespace Domus
                     }
                     catch (Exception)//caso a leitura falhe
                     {
-                        ConsoleWrite("Device {0} disconnected. Connection timeout.", true, me.deviceUniqueID);
+                        log.Warn("Device "+ me.deviceUniqueID + " disconnected. Connection timeout.");
                         lostConnection = true;
                     }
                 }
@@ -480,7 +497,7 @@ namespace Domus
                     }
                     else if (timeOutCounter > me.dataDelay + 50)//espera 5 segundos para resposta
                     {
-                        ConsoleWrite("Device {0} disconnected.", true, me.deviceUniqueID);
+                        log.Info("Device "+ me.deviceUniqueID + " disconnected.");
                         lostConnection = true;
                     }
 
@@ -510,7 +527,7 @@ namespace Domus
 
             if (!config.bannedIPs.Contains(me.clientIP))//verifica se o IP não está banido e aceita a conexão
             {
-                ConsoleWrite("Client at {0} connected on port {1}", true, me.clientIP, client.Client.RemoteEndPoint.ToString().Split(':')[1]);
+                log.Info("Client at "+ me.clientIP + " connected on port " + client.Client.RemoteEndPoint.ToString().Split(':')[1]);
             }
 
             while (client.Connected)
@@ -523,7 +540,7 @@ namespace Domus
                 //verifica se o IP não foi banido durante a conexão ativa
                 if (config.bannedIPs.Contains(me.clientIP))
                 {
-                    ConsoleWrite("Can't connect. The IP {0} is banned.", false, me.clientIP);
+                    log.Info("Can't connect. The IP "+ me.clientIP + " is banned.");
                     ClientWrite(stream, "Can't connect. The client is banned.");
                     Thread.Sleep(5000);
                     lostConnection = true;
@@ -532,7 +549,7 @@ namespace Domus
                 //se receber o sinal de desligar
                 if (desligar)
                 {
-                    ConsoleWrite("Client {0} disconnected by server shutting down command.", false, me.clientIP);
+                    log.Info("Client "+ me.clientIP + " disconnected by server shutting down command.");
                     lostConnection = true;
                 }
 
@@ -560,9 +577,9 @@ namespace Domus
                             {
                                 if (data.Contains("<exit>"))
                                 {
-                                    ConsoleWrite("User {0} has loggedout.", true, user.username);
+                                    log.Info("User "+ user.username + " has loggedout.");
 
-                                    ConsoleWrite("Client at {0} has exited.", true, me.clientIP);
+                                    log.Info("Client at "+ me.clientIP + " has exited.");
                                     lostConnection = true;
                                 }
                                 else
@@ -582,7 +599,7 @@ namespace Domus
                                 
                                 if (data.Contains("<exit>"))
                                 {
-                                    ConsoleWrite("Client at {0} has exited.", true, me.clientIP);
+                                    log.Info("Client at "+ me.clientIP + " has exited.");
                                     lostConnection = true;
                                 }
                                 else if (data.Contains("<Login>"))
@@ -597,7 +614,7 @@ namespace Domus
                                     }
                                     catch(Exception e)
                                     {
-                                        ConsoleWrite("Error to login {0} - {1}", true, me.clientIP, e.Message);
+                                        log.Error("Error to login "+ me.clientIP + " - " + e.Message);
                                         user = null;
                                     }
 
@@ -611,11 +628,11 @@ namespace Domus
 
                                                 ClientWrite(stream, "sucessfullLogin");
 
-                                                ConsoleWrite("Client at {0} has started to login as {1}", true, me.clientIP, user.username);
+                                                log.Info("Client at "+ me.clientIP + " has started to login as " + user.username);
                                             }
                                             catch (Exception e)
                                             {
-                                                ConsoleWrite("Error to login {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+                                                log.Error("Error to login "+ user.username + "@"+ me.clientIP + " - " + e.Message);
 
                                                 ClientWrite(stream, "wrongLogin");
                                             }
@@ -627,7 +644,7 @@ namespace Domus
                                     }
                                     catch (Exception e)
                                     {
-                                        ConsoleWrite("Error to login {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+                                        log.Error("Error to login " + user.username + "@" + me.clientIP + " - " + e.Message);
 
                                         ClientWrite(stream, "wrongLogin");
                                     }
@@ -641,7 +658,7 @@ namespace Domus
                                     //serializa o objeto User e envia para o cliente
                                     ClientWriteSerialized(stream, user);
 
-                                    ConsoleWrite("Client at {0} has logged in as {1}", true, me.clientIP, user.username);
+                                    log.Info("Client at "+ me.clientIP + " has logged in as " + user.username);
                                 }
                                 else if (data == "shakeback")
                                 {
@@ -661,7 +678,7 @@ namespace Domus
                     }
                     catch//caso a leitura falhe
                     {
-                        ConsoleWrite("Client {0} disconnected. Connection timeout.", true, me.clientIP);
+                        log.Error("Client "+ me.clientIP + " disconnected. Connection timeout.");
                         lostConnection = true;
                     }
                 }
@@ -669,7 +686,7 @@ namespace Domus
                 {
                     if (timeOutCounter == timeOutTime)//se após 10 minutos não houver comunicação, verifica se o cliente esta online
                     {
-                        ConsoleWrite("Client {0} disconnected.", true, me.clientIP);
+                        log.Info("Client "+ me.clientIP + " disconnected.");
                         lostConnection = true;
                     }
 
@@ -687,13 +704,13 @@ namespace Domus
             if (data.StartsWith("banip"))
             {
                 config.AddBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
-                ConsoleWrite("User {0}@{1} has banned the ip {1}", true, user.username, me.clientIP, data.Split(' ')[1]);
+                log.Info("User "+ user.username + "@"+ me.clientIP + " has banned the ip " + data.Split(' ')[1]);
                 ClientWrite(stream, "You have banned " + data.Split(' ')[1]);
             }
             else if (data.StartsWith("unbanip"))
             {
                 config.RemoveBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
-                ConsoleWrite("User {0}@{1} has unbanned the ip {1}", true, user.username, me.clientIP, data.Split(' ')[1]);
+                log.Info("User " + user.username + "@" + me.clientIP + " has unbanned the ip " + data.Split(' ')[1]);
                 ClientWrite(stream, "You have unbanned " + data.Split(' ')[1]);
             }
             else if (data.Contains("listdevices"))
@@ -720,11 +737,11 @@ namespace Domus
 
                     ClientWriteSerialized(stream, Users);
 
-                    ConsoleWrite("Listed all clients to user {0}@{1}", true, user.username, me.clientIP);
+                    log.Info("Listed all clients to user " + user.username + "@" + me.clientIP);
                 }
                 catch(Exception e)
                 {
-                    ConsoleWrite("Fail to list all clients to user {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+                    log.Error("Fail to list all clients to user " + user.username + "@" + me.clientIP + " - " + e.Message, e);
                 }
             }
             else if (data.Contains("UpdateUser"))
@@ -733,7 +750,7 @@ namespace Domus
                 {
                     ClientWrite(stream, "sendUser");
 
-                    ConsoleWrite("User {0}@{1} has sent an UpdateUser request.", true, user.username, me.clientIP);
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an UpdateUser request.");
 
                     User temp = (User) ClientReadSerilized(stream, 30000);
 
@@ -741,11 +758,11 @@ namespace Domus
 
                     ClientWrite(stream, "UserUpdated");
 
-                    ConsoleWrite("The UpdateUser request from {0}@{1} was successfullycompleted and updated the user {2}.", true, user.username, me.clientIP, temp.username);
+                    log.Info("The UpdateUser request from " + user.username + "@" + me.clientIP + " was successfullycompleted and updated the user " + temp.username + ".");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Error on complete UpdateUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+                    log.Error("Error on complete UpdateUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToUpdate");
                 }
@@ -756,7 +773,7 @@ namespace Domus
                 {
                     ClientWrite(stream, "sendNewUser");
 
-                    ConsoleWrite("User {0}@{1} has sent an UpdateUser request.", true, user.username, me.clientIP);
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an UpdateUser request.");
 
                     User temp = (User)ClientReadSerilized(stream, 30000);
 
@@ -764,11 +781,11 @@ namespace Domus
 
                     ClientWrite(stream, "UserAdded");
 
-                    ConsoleWrite("The UpdateUser request from {0}@{1} was successfullycompleted and updated the user {2}.", true, user.username, me.clientIP, temp.username);
+                    log.Info("The UpdateUser request from " + user.username + "@" + me.clientIP + " was successfullycompleted and updated the user " + temp.username + ".");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Error on complete UpdateUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+                    log.Error("Error on complete UpdateUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToAdd");
                 }
@@ -777,17 +794,17 @@ namespace Domus
             {
                 try
                 {
-                    ConsoleWrite("User {0}@{1} has sent an DeleteUser request.", true, user.username, me.clientIP);
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an DeleteUser request.");
 
                     DatabaseHandler.DeleteUser(connectionString, Convert.ToInt32(data.Split(";")[1]));
 
                     ClientWrite(stream, "UserDeleted");
 
-                    ConsoleWrite("The DeleteUser request from {0}@{1} was successfullycompleted and deleted the userId {2}.", true, user.username, me.clientIP, data.Split(";")[1]);
+                    log.Info("The DeleteUser request from " + user.username + "@" + me.clientIP + " was successfullycompleted and deleted the userId " + data.Split(";")[1] + ".");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Error on complete DeleteUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+                    log.Error("Error on complete DeleteUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToDelete");
                 }
@@ -796,13 +813,13 @@ namespace Domus
             {
                 try
                 {
-                    ConsoleWrite("User {0}@{1} has sent an ChangePasswd request.", true, user.username, me.clientIP);
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an ChangePasswd request.");
 
                     if (!BCrypt.Net.BCrypt.Verify(data.Split(";")[1], DatabaseHandler.GetUserById(connectionString, user.userId).password))
                     {
                         ClientWrite(stream, "InvalidOldPasswd");
 
-                        ConsoleWrite("Error on complete ChangePasswd request from client {0}@{1} - Wrong password.", false, user.username, me.clientIP);
+                        log.Error("Error on complete ChangePasswd request from client " + user.username + "@" + me.clientIP + " - Wrong password.");
 
                         return;
                     }
@@ -811,11 +828,11 @@ namespace Domus
 
                     ClientWrite(stream, "PasswdChanged");
 
-                    ConsoleWrite("The ChangePasswd request from {0}@{1} was successfullycompleted.", true, user.username, me.clientIP);
+                    log.Info("The ChangePasswd request from " + user.username + "@" + me.clientIP + " was successfullycompleted.");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Error on complete ChangePasswd request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+                    log.Error("Error on complete ChangePasswd request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToChangePasswd");
                 }
@@ -824,17 +841,17 @@ namespace Domus
             {
                 try
                 {
-                    ConsoleWrite("User {0}@{1} has sent an ResetPasswd request.", true, user.username, me.clientIP);
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an ResetPasswd request.");
 
                     DatabaseHandler.ChangeUserPasswd(connectionString, Convert.ToInt32(data.Split(";")[1]), data.Split(";")[2]);
 
                     ClientWrite(stream, "PasswdReseted");
 
-                    ConsoleWrite("The ResetPasswd request from {0}@{1} was successfullycompleted and reseted the passwrod for userId {2}.", true, user.username, me.clientIP, data.Split(";")[1]);
+                    log.Info("The ResetPasswd request from " + user.username + "@" + me.clientIP + " was successfullycompleted and reseted the passwrod for userId " + data.Split(";")[1] + ".");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Error on complete ResetPasswd request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+                    log.Error("Error on complete ResetPasswd request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToResetPasswd");
                 }
@@ -847,32 +864,18 @@ namespace Domus
 
                     ClientWriteSerialized(stream, weather);
 
-                    ConsoleWrite("Weather sent to user {0}@{1}", true, user.username, me.clientIP);
+                    log.Info("Weather sent to user " + user.username + "@" + me.clientIP);
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Fail to sent weather to user {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+                    log.Error("Fail to sent weather to user " + user.username + "@" + me.clientIP + " - " + e.Message, e);
                 }
             }
             else
             {
                 ClientWrite(stream, "InvalidCommand");
-                ConsoleWrite("User {0}@{1} has send: {1}", false, user.username, me.clientIP, data);
+                log.Warn("User " + user.username + "@" + me.clientIP + " has send: " + data);
             }
-        }
-
-        //Função para printar no console
-        private static void ConsoleWrite(string message, bool logThis, params object[] args)
-        {
-            if (logThis || config.forceLog)
-            {
-                logger.AddLog(message, args);
-            }
-
-            message = DateTime.Now.ToString(new CultureInfo("pt-BR")) + " - " + message;
-
-            Console.WriteLine(message, args);
-
         }
 
         //Função que envia mensagens ao cliente conectado
@@ -944,18 +947,17 @@ namespace Domus
         //Função que atualiza a previsão do tempo
         static async Task RefreshForecast()
         {
-            ConsoleWrite("Updating forecast informations", true);
+            log.Info("Updating forecast informations");
 
             try
             {
                 forecast = Weather.CheckForecast();
 
-                ConsoleWrite("Successfully updated forecasts for {0},{1} ({2};{3}) ", true, forecast.Location_Name,
-                    forecast.Location_Country, forecast.Location_Latitude, forecast.Location_Longitude);
+                log.Info("Successfully updated forecasts for "+ forecast.Location_Name + ","+ forecast.Location_Country + " ("+ forecast.Location_Latitude + ";"+ forecast.Location_Longitude + ") ");
             }
             catch (Exception e)
             {
-                ConsoleWrite("Fail to update forecast informations for {0},{1} ==> {2}", true, config.cityName, config.countryId, e.Message);
+                log.Error("Fail to update forecast informations for "+ config.cityName + ","+ config.countryId + " ==> " + e.Message);
             }
         }
 
@@ -974,7 +976,7 @@ namespace Domus
                 {
                     if (!DeviceConnections.TryTake(out temp))
                     {
-                        ConsoleWrite("Não foi possivel limpar a fila de dispositivos. ({0})",true,DevicesInMemory);
+                        log.Error("Não foi possivel limpar a fila de dispositivos. ("+ DevicesInMemory + ")");
                     }
                     else
                     {
@@ -994,7 +996,7 @@ namespace Domus
                 {
                     if (!ClientConnections.TryTake(out temp))
                     {
-                        ConsoleWrite("Não foi possivel limpar a fila de clientes. ({0})", true, ClientsInMemory);
+                        log.Error("Não foi possivel limpar a fila de clientes. ("+ ClientsInMemory + ")");
                     }
                     else
                     {

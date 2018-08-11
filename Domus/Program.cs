@@ -703,13 +703,13 @@ namespace Domus
             if (data.StartsWith("banip"))
             {
                 config.AddBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
-                ConsoleWrite("User {0}@{1} has banned the ip {1}", true, user.username, me.clientIP, data.Split(' ')[1]);
+                log.Info("User "+ user.username + "@"+ me.clientIP + " has banned the ip " + data.Split(' ')[1]);
                 ClientWrite(stream, "You have banned " + data.Split(' ')[1]);
             }
             else if (data.StartsWith("unbanip"))
             {
                 config.RemoveBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
-                ConsoleWrite("User {0}@{1} has unbanned the ip {1}", true, user.username, me.clientIP, data.Split(' ')[1]);
+                log.Info("User " + user.username + "@" + me.clientIP + " has unbanned the ip " + data.Split(' ')[1]);
                 ClientWrite(stream, "You have unbanned " + data.Split(' ')[1]);
             }
             else if (data.Contains("listdevices"))
@@ -736,11 +736,11 @@ namespace Domus
 
                     ClientWriteSerialized(stream, Users);
 
-                    ConsoleWrite("Listed all clients to user {0}@{1}", true, user.username, me.clientIP);
+                    log.Info("Listed all clients to user " + user.username + "@" + me.clientIP);
                 }
                 catch(Exception e)
                 {
-                    ConsoleWrite("Fail to list all clients to user {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+                    log.Error("Fail to list all clients to user " + user.username + "@" + me.clientIP + " - " + e.Message, e);
                 }
             }
             else if (data.Contains("UpdateUser"))
@@ -749,7 +749,7 @@ namespace Domus
                 {
                     ClientWrite(stream, "sendUser");
 
-                    ConsoleWrite("User {0}@{1} has sent an UpdateUser request.", true, user.username, me.clientIP);
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an UpdateUser request.");
 
                     User temp = (User) ClientReadSerilized(stream, 30000);
 
@@ -757,11 +757,11 @@ namespace Domus
 
                     ClientWrite(stream, "UserUpdated");
 
-                    ConsoleWrite("The UpdateUser request from {0}@{1} was successfullycompleted and updated the user {2}.", true, user.username, me.clientIP, temp.username);
+                    log.Info("The UpdateUser request from " + user.username + "@" + me.clientIP + " was successfullycompleted and updated the user " + temp.username + ".");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Error on complete UpdateUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+                    log.Error("Error on complete UpdateUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToUpdate");
                 }
@@ -772,7 +772,7 @@ namespace Domus
                 {
                     ClientWrite(stream, "sendNewUser");
 
-                    ConsoleWrite("User {0}@{1} has sent an UpdateUser request.", true, user.username, me.clientIP);
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an UpdateUser request.");
 
                     User temp = (User)ClientReadSerilized(stream, 30000);
 
@@ -780,11 +780,11 @@ namespace Domus
 
                     ClientWrite(stream, "UserAdded");
 
-                    ConsoleWrite("The UpdateUser request from {0}@{1} was successfullycompleted and updated the user {2}.", true, user.username, me.clientIP, temp.username);
+                    log.Info("The UpdateUser request from " + user.username + "@" + me.clientIP + " was successfullycompleted and updated the user " + temp.username + ".");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Error on complete UpdateUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+                    log.Error("Error on complete UpdateUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToAdd");
                 }
@@ -793,17 +793,17 @@ namespace Domus
             {
                 try
                 {
-                    ConsoleWrite("User {0}@{1} has sent an DeleteUser request.", true, user.username, me.clientIP);
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an DeleteUser request.");
 
                     DatabaseHandler.DeleteUser(connectionString, Convert.ToInt32(data.Split(";")[1]));
 
                     ClientWrite(stream, "UserDeleted");
 
-                    ConsoleWrite("The DeleteUser request from {0}@{1} was successfullycompleted and deleted the userId {2}.", true, user.username, me.clientIP, data.Split(";")[1]);
+                    log.Info("The DeleteUser request from " + user.username + "@" + me.clientIP + " was successfullycompleted and deleted the userId " + data.Split(";")[1] + ".");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Error on complete DeleteUser request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+                    log.Error("Error on complete DeleteUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToDelete");
                 }
@@ -812,13 +812,13 @@ namespace Domus
             {
                 try
                 {
-                    ConsoleWrite("User {0}@{1} has sent an ChangePasswd request.", true, user.username, me.clientIP);
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an ChangePasswd request.");
 
                     if (!BCrypt.Net.BCrypt.Verify(data.Split(";")[1], DatabaseHandler.GetUserById(connectionString, user.userId).password))
                     {
                         ClientWrite(stream, "InvalidOldPasswd");
 
-                        ConsoleWrite("Error on complete ChangePasswd request from client {0}@{1} - Wrong password.", false, user.username, me.clientIP);
+                        log.Error("Error on complete ChangePasswd request from client " + user.username + "@" + me.clientIP + " - Wrong password.");
 
                         return;
                     }
@@ -827,11 +827,11 @@ namespace Domus
 
                     ClientWrite(stream, "PasswdChanged");
 
-                    ConsoleWrite("The ChangePasswd request from {0}@{1} was successfullycompleted.", true, user.username, me.clientIP);
+                    log.Info("The ChangePasswd request from " + user.username + "@" + me.clientIP + " was successfullycompleted.");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Error on complete ChangePasswd request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+                    log.Error("Error on complete ChangePasswd request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToChangePasswd");
                 }
@@ -840,17 +840,17 @@ namespace Domus
             {
                 try
                 {
-                    ConsoleWrite("User {0}@{1} has sent an ResetPasswd request.", true, user.username, me.clientIP);
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an ResetPasswd request.");
 
                     DatabaseHandler.ChangeUserPasswd(connectionString, Convert.ToInt32(data.Split(";")[1]), data.Split(";")[2]);
 
                     ClientWrite(stream, "PasswdReseted");
 
-                    ConsoleWrite("The ResetPasswd request from {0}@{1} was successfullycompleted and reseted the passwrod for userId {2}.", true, user.username, me.clientIP, data.Split(";")[1]);
+                    log.Info("The ResetPasswd request from " + user.username + "@" + me.clientIP + " was successfullycompleted and reseted the passwrod for userId " + data.Split(";")[1] + ".");
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Error on complete ResetPasswd request from client {0}@{1} - {2}", false, user.username, me.clientIP, e.Message);
+                    log.Error("Error on complete ResetPasswd request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToResetPasswd");
                 }
@@ -863,17 +863,17 @@ namespace Domus
 
                     ClientWriteSerialized(stream, weather);
 
-                    ConsoleWrite("Weather sent to user {0}@{1}", true, user.username, me.clientIP);
+                    log.Info("Weather sent to user " + user.username + "@" + me.clientIP);
                 }
                 catch (Exception e)
                 {
-                    ConsoleWrite("Fail to sent weather to user {0}@{1} - {2}", true, user.username, me.clientIP, e.Message);
+                    log.Error("Fail to sent weather to user " + user.username + "@" + me.clientIP + " - " + e.Message, e);
                 }
             }
             else
             {
                 ClientWrite(stream, "InvalidCommand");
-                ConsoleWrite("User {0}@{1} has send: {1}", false, user.username, me.clientIP, data);
+                log.Warn("User " + user.username + "@" + me.clientIP + " has send: " + data);
             }
         }
 
@@ -946,18 +946,17 @@ namespace Domus
         //Função que atualiza a previsão do tempo
         static async Task RefreshForecast()
         {
-            ConsoleWrite("Updating forecast informations", true);
+            log.Info("Updating forecast informations");
 
             try
             {
                 forecast = Weather.CheckForecast();
 
-                ConsoleWrite("Successfully updated forecasts for {0},{1} ({2};{3}) ", true, forecast.Location_Name,
-                    forecast.Location_Country, forecast.Location_Latitude, forecast.Location_Longitude);
+                log.Info("Successfully updated forecasts for "+ forecast.Location_Name + ","+ forecast.Location_Country + " ("+ forecast.Location_Latitude + ";"+ forecast.Location_Longitude + ") ");
             }
             catch (Exception e)
             {
-                ConsoleWrite("Fail to update forecast informations for {0},{1} ==> {2}", true, config.cityName, config.countryId, e.Message);
+                log.Error("Fail to update forecast informations for "+ config.cityName + ","+ config.countryId + " ==> " + e.Message);
             }
         }
 
@@ -976,7 +975,7 @@ namespace Domus
                 {
                     if (!DeviceConnections.TryTake(out temp))
                     {
-                        ConsoleWrite("Não foi possivel limpar a fila de dispositivos. ({0})",true,DevicesInMemory);
+                        log.Error("Não foi possivel limpar a fila de dispositivos. ("+ DevicesInMemory + ")");
                     }
                     else
                     {
@@ -996,7 +995,7 @@ namespace Domus
                 {
                     if (!ClientConnections.TryTake(out temp))
                     {
-                        ConsoleWrite("Não foi possivel limpar a fila de clientes. ({0})", true, ClientsInMemory);
+                        log.Error("Não foi possivel limpar a fila de clientes. ("+ ClientsInMemory + ")");
                     }
                     else
                     {

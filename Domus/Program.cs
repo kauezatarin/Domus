@@ -215,6 +215,11 @@ namespace Domus
 
         }
 
+        private static void ScheduleIrrigationTaskts(List<IrrigationSchedule> schedules)
+        {
+
+        }
+
         private static void WaitKillCommand()
         {
             while (!desligar)

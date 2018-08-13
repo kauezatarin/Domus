@@ -110,20 +110,22 @@ namespace Domus
 
                         for (int j = 0; j < tasksCount; j++)
                         {
-                            scheduledTasks.TryTake(out temp);
 
-                            if (temp.TaskId == tempId)//item found
+                            if (scheduledTasks.TryTake(out temp))
                             {
-                                if(temp.Scheduler.Enabled)
-                                    temp.Scheduler.Stop();
+                                if (temp.TaskId == tempId)//item found
+                                {
+                                    if (temp.Scheduler.Enabled)
+                                        temp.Scheduler.Stop();
 
-                                temp.Scheduler.Dispose();
+                                    temp.Scheduler.Dispose();
 
-                                break;
-                            }
-                            else
-                            {
-                                scheduledTasks.Add(temp);
+                                    break;
+                                }
+                                else
+                                {
+                                    scheduledTasks.Add(temp);
+                                }
                             }
                         }
 
@@ -133,19 +135,20 @@ namespace Domus
                 {
                     for (int i = 0; i < tasksCount; i++)
                     {
-                        scheduledTasks.TryTake(out temp);
-
-                        if (temp.Scheduler.Enabled == false)//if times is stopped
+                        if(scheduledTasks.TryTake(out temp))
                         {
-                            if (temp.Repeat != "no")//and is set to repeat
+                            if (temp.Scheduler.Enabled == false)//if times is stopped
                             {
-                                temp.renew(GetRenewDate(temp.TriggerDate, temp.Repeat));//updates trigger time
+                                if (temp.Repeat != "no")//and is set to repeat
+                                {
+                                    temp.renew(GetRenewDate(temp.TriggerDate, temp.Repeat));//updates trigger time
 
-                                scheduledTasks.Add(temp);//add it back to the list
-                            }
-                            else
-                            {
-                                temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
+                                    scheduledTasks.Add(temp);//add it back to the list
+                                }
+                                else
+                                {
+                                    temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
+                                }
                             }
                         }
                     }
@@ -154,16 +157,17 @@ namespace Domus
                 {
                     for (int i = 0; i < tasksCount; i++)
                     {
-                        scheduledTasks.TryTake(out temp);
-
-                        if (temp.Scheduler.Enabled == false)//if times is stopped
+                        if (scheduledTasks.TryTake(out temp))
                         {
-                            temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
-                        }
-                        else
-                        {
-                            temp.Scheduler.Stop();
-                            temp.Scheduler.Dispose();
+                            if (temp.Scheduler.Enabled == false)//if times is stopped
+                            {
+                                temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
+                            }
+                            else
+                            {
+                                temp.Scheduler.Stop();
+                                temp.Scheduler.Dispose();
+                            }
                         }
                     }
 
@@ -204,7 +208,7 @@ namespace Domus
         {
             try
             {
-               Scheduler.Interval = (renewTo - DateTime.Now).TotalMilliseconds;
+                Scheduler.Interval = (renewTo - DateTime.Now).TotalMilliseconds;
 
                 TriggerDate = renewTo;
 

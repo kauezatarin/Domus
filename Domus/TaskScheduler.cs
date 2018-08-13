@@ -106,29 +106,29 @@ namespace Domus
                 {
                     for (int i = 0; i < toDeleteCount; i++)
                     {
-                        deletTasks.TryTake(out tempId);
-
-                        for (int j = 0; j < tasksCount; j++)
+                        if (deletTasks.TryTake(out tempId))
                         {
-
-                            if (scheduledTasks.TryTake(out temp))
+                            for (int j = 0; j < tasksCount; j++)
                             {
-                                if (temp.TaskId == tempId)//item found
-                                {
-                                    if (temp.Scheduler.Enabled)
-                                        temp.Scheduler.Stop();
 
-                                    temp.Scheduler.Dispose();
-
-                                    break;
-                                }
-                                else
+                                if (scheduledTasks.TryTake(out temp))
                                 {
-                                    scheduledTasks.Add(temp);
+                                    if (temp.TaskId == tempId)//item found
+                                    {
+                                        if (temp.Scheduler.Enabled)
+                                            temp.Scheduler.Stop();
+
+                                        temp.Scheduler.Dispose();
+
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        scheduledTasks.Add(temp);
+                                    }
                                 }
                             }
                         }
-
                     }
                 }
                 else if (!cancelAll)//case the flag cancelAll is false

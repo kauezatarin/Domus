@@ -414,6 +414,44 @@ namespace Domus
             }
         }
 
+        /// <summary>
+        /// Retorna uma lista contendo todos os agendamentos de irrigação cadastrados
+        /// </summary>
+        public static List<IrrigationSchedule> GetAllIrrigationSchedules(string connectionString)
+        {
+            List<IrrigationSchedule> schedules = new List<IrrigationSchedule>();
+            IrrigationSchedule temp;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM irrigation_schedule";
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            while (dataReader.Read())
+                            {
+                                temp = Maper.MapIrrigationSchedule(dataReader);
+
+                                schedules.Add(temp);
+                            }
+                        }
+
+                        return schedules;
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
         /*//Count statement
         public int Count()
         {

@@ -268,7 +268,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Sunday);
 
-                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -277,7 +277,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Monday);
 
-                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -286,7 +286,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Tuesday);
 
-                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -295,7 +295,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Wednesday);
 
-                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -304,7 +304,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Thursday);
 
-                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -313,7 +313,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Friday);
 
-                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -322,7 +322,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Saturday);
 
-                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -1079,9 +1079,13 @@ namespace Domus
         }
 
         //Função que liga a irrigação
-        static async Task TurnOnIrrigation()
+        static async Task TurnOnIrrigation(int time)
         {
             log.Info("Irrigation turned on.");
+
+            Thread.Sleep(time * 1000);
+
+            log.Info("Irrigation turned off.");
         }
 
         //Garbage colector que limpa a lista de clientes e devices conectados

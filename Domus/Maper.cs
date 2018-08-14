@@ -76,6 +76,7 @@ namespace Domus
                 dataReader.GetInt32("schedule_id"),
                 dataReader.GetString("schedule_name"),
                 dataReader.GetDateTime("schedule_time"),
+                dataReader.GetInt32("run_for"),
                 dataReader.GetBoolean("sunday"),
                 dataReader.GetBoolean("moonday"),
                 dataReader.GetBoolean("tuesday"),

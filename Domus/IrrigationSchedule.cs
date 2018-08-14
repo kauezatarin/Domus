@@ -6,7 +6,7 @@ namespace Domus
 {
     public class IrrigationSchedule
     {
-        public IrrigationSchedule(int scheduleId, string scheduleName, DateTime scheduleTime, bool sunday, bool moonday, bool tuesday, bool wednesday, bool thursday, bool friday, bool saturday, bool active)
+        public IrrigationSchedule(int scheduleId, string scheduleName, DateTime scheduleTime, int runFor,bool sunday, bool moonday, bool tuesday, bool wednesday, bool thursday, bool friday, bool saturday, bool active)
         {
             this.scheduleId = scheduleId;
             this.scheduleName = scheduleName;
@@ -19,6 +19,7 @@ namespace Domus
             this.friday = friday;
             this.saturday = saturday;
             this.active = active;
+            this.runFor = runFor;
         }
 
         public int scheduleId { get; set; }
@@ -26,6 +27,8 @@ namespace Domus
         public string scheduleName { get; set; }
 
         public DateTime scheduleTime { get; set; }
+
+        public int runFor { get; set; }
 
         public bool sunday { get; set; }
 

@@ -1,4 +1,5 @@
 ﻿//Add MySql Library
+
 using MySql.Data.MySqlClient;
 using DomusSharedClasses;
 
@@ -62,6 +63,29 @@ namespace Domus
                 dataReader.GetString("data2_name"),
                 dataReader.GetString("data3_name"),
                 dataReader.GetString("data4_name"));
+
+            return temp;
+        }
+
+        /// <summary>
+        /// Mapeia o datareader para um objeto Device
+        /// </summary>
+        public static IrrigationSchedule MapIrrigationSchedule(MySqlDataReader dataReader)
+        {
+            IrrigationSchedule temp = new IrrigationSchedule(
+                dataReader.GetInt32("schedule_id"),
+                dataReader.GetString("schedule_name"),
+                dataReader.GetDateTime("schedule_time"),
+                dataReader.GetInt32("run_for"),
+                dataReader.GetBoolean("sunday"),
+                dataReader.GetBoolean("moonday"),
+                dataReader.GetBoolean("tuesday"),
+                dataReader.GetBoolean("wednesday"),
+                dataReader.GetBoolean("thursday"),
+                dataReader.GetBoolean("friday"),
+                dataReader.GetBoolean("saturday"),
+                dataReader.GetBoolean("active")
+                );
 
             return temp;
         }

@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
@@ -30,14 +31,16 @@ namespace Domus
         private static Forecast forecast;
         private static TaskScheduler scheduler = new TaskScheduler();//scheduler.scheduleTask(DateTime.Now + new TimeSpan(0, 0, 10), async ()=> {Teste();}, "Hourly");
         private static ILog log;
+        private static TcpListener deviceServer = null;
+        private static TcpListener clientServer = null;
+        private static Thread deviceListener = null;
+        private static Thread clientListener = null;
 
         static void Main(string[] args)
         {
-            TcpListener deviceServer = null;
-            TcpListener clientServer = null;
-            Thread deviceListener = null;
-            Thread clientListener = null;
             Thread connectionCleaner = null;
+
+            AppDomain.CurrentDomain.ProcessExit += onSystemshutdown;
             
             Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
@@ -101,7 +104,6 @@ namespace Domus
                     }
                 }
                 
-
                 //Tenta resgatar a previsão do tempo
                 log.Info("Acquiring forecast informations");
 
@@ -126,6 +128,10 @@ namespace Domus
                     temp = temp.AddDays(1);
 
                     scheduler.ScheduleTask(temp, RefreshForecast, "Daily");
+
+                    log.Info("Forecast updater schedule to run daily at 00:00:00");
+
+                    ScheduleIrrigationTaskts(DatabaseHandler.GetAllIrrigationSchedules(connectionString));
 
                     log.Info("Tasks scheduled");
                 }
@@ -163,6 +169,17 @@ namespace Domus
             }
             finally
             {
+                StopRoutine();
+            }
+
+            return;
+        }
+
+        //rotina executada quando o servidor está sendo encerrado
+        static void StopRoutine()
+        {
+            try
+            {
                 log.Info("Disconnecting all clients and devices...");
                 desligar = true;
 
@@ -181,15 +198,32 @@ namespace Domus
 
                 log.Info("Stopped");
 
-                log.Info("Saving configs...");
-                config.SaveConfigs();
-                log.Info("Saved");
+                log.Info("Cleaning scheduled tasks...");
+
+                scheduler.DeleteAllTasks();
+
+                while (scheduler.TasksCount() != 0)
+                {
+                    Thread.Sleep(100);
+                }
+
+                log.Info("Cleared");
 
                 log.Info("Server Stoped.");
-
             }
+            catch (Exception e)
+            {
+                log.Error("Error on server close routine - " + e.Message, e);
+            }
+        }
 
-            return;
+        //metodo chamado quando o servidor recebe um SIGterm
+        private static void onSystemshutdown(object sender, EventArgs e)
+        {
+            if (!desligar)
+            {
+                StopRoutine();
+            }
         }
 
         //função que cria a conexão com a rede
@@ -215,6 +249,88 @@ namespace Domus
 
         }
 
+        //função que insere os agendamentos de irrigação
+        private static void ScheduleIrrigationTaskts(List<IrrigationSchedule> schedules)
+        {
+            foreach (IrrigationSchedule schedule in schedules)
+            {
+                DateTime temp = schedule.scheduleTime;
+
+                temp = temp.AddDays(DateTime.Now.Day - temp.Day);
+                temp = temp.AddDays(DateTime.Now.Month - temp.Month);
+                temp = temp.AddDays(DateTime.Now.Year - temp.Year);
+
+                schedule.scheduleTime = temp;
+
+                if (schedule.active)
+                {
+                    if (schedule.sunday)
+                    {
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Sunday);
+
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                    }
+
+                    if (schedule.moonday)
+                    {
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Monday);
+
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                    }
+
+                    if (schedule.tuesday)
+                    {
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Tuesday);
+
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                    }
+
+                    if (schedule.wednesday)
+                    {
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Wednesday);
+
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                    }
+
+                    if (schedule.thursday)
+                    {
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Thursday);
+
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                    }
+
+                    if (schedule.friday)
+                    {
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Friday);
+
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                    }
+
+                    if (schedule.saturday)
+                    {
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Saturday);
+
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                    }
+                }
+            }
+        }
+
+        //função que impede que o servidor morra antes de receber o comando de desligamento
         private static void WaitKillCommand()
         {
             while (!desligar)
@@ -223,6 +339,7 @@ namespace Domus
             }
         }
 
+        //função que aguarda o comando de encerramento do servidor
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             if (e.SpecialKey == ConsoleSpecialKey.ControlC)
@@ -959,6 +1076,16 @@ namespace Domus
             {
                 log.Error("Fail to update forecast informations for "+ config.cityName + ","+ config.countryId + " ==> " + e.Message);
             }
+        }
+
+        //Função que liga a irrigação
+        static async Task TurnOnIrrigation(int time)
+        {
+            log.Info("Irrigation turned on.");
+
+            Thread.Sleep(time * 1000);
+
+            log.Info("Irrigation turned off.");
         }
 
         //Garbage colector que limpa a lista de clientes e devices conectados

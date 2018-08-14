@@ -7,8 +7,8 @@ namespace Domus
 {
     class TaskScheduler
     {
-        BlockingCollection<ScheduledTask> scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
-        BlockingCollection<double> deletTasks = new BlockingCollection<double>(new ConcurrentQueue<double>());
+        private static BlockingCollection<ScheduledTask> scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
+        private static BlockingCollection<double> deletTasks = new BlockingCollection<double>(new ConcurrentQueue<double>());
         private Thread schedulerWorker;
         private bool cancelAll = false;
         private double idCounter = 0;
@@ -29,7 +29,7 @@ namespace Domus
 
             temp.Scheduler.AutoReset = false;
 
-            scheduledTasks.TryAdd(temp);
+            scheduledTasks.Add(temp);
 
             return taskId;
         }
@@ -55,6 +55,27 @@ namespace Domus
         public void DeleteAllTasks()
         {
             cancelAll = true;
+        }
+
+        public int TasksCount()
+        {
+            return scheduledTasks.Count;
+        }
+
+        public DateTime GetNextWeekday(DateTime start, DayOfWeek day)
+        {
+
+            if (start.DayOfWeek == day)//caso seja necessário adicionar 7 dias
+            {
+                return start.AddDays(7);
+            }
+            else
+            {
+                // O (... + 7) % 7 garante que seja obtido um valor entre [0, 6]
+                int daysToAdd = ((int)day - (int)start.DayOfWeek + 7) % 7;
+
+                return start.AddDays(daysToAdd);
+            }
         }
 
         private double GetNextId()
@@ -85,14 +106,7 @@ namespace Domus
                 throw new Exception("Renew mode '"+ repeat +"' not found.");
             }
         }
-
-        private DateTime GetNextWeekday(DateTime start, DayOfWeek day)
-        {
-            // The (... + 7) % 7 ensures we end up with a value in the range [0, 6]
-            int daysToAdd = ((int)day - (int)start.DayOfWeek + 7) % 7;
-            return start.AddDays(daysToAdd);
-        }
-
+        
         private void SchedulerThread()
         {
             while (true)
@@ -106,46 +120,53 @@ namespace Domus
                 {
                     for (int i = 0; i < toDeleteCount; i++)
                     {
-                        deletTasks.TryTake(out tempId);
-
-                        for (int j = 0; j < tasksCount; j++)
+                        if (deletTasks.TryTake(out tempId))
                         {
-                            scheduledTasks.TryTake(out temp);
-
-                            if (temp.TaskId == tempId)//item found
+                            for (int j = 0; j < tasksCount; j++)
                             {
-                                if(temp.Scheduler.Enabled)
-                                    temp.Scheduler.Stop();
 
-                                temp.Scheduler.Dispose();
+                                if (scheduledTasks.TryTake(out temp))
+                                {
+                                    if (temp.TaskId == tempId)//item found
+                                    {
+                                        if (temp.Scheduler.Enabled)
+                                            temp.Scheduler.Stop();
 
-                                break;
-                            }
-                            else
-                            {
-                                scheduledTasks.Add(temp);
+                                        temp.Scheduler.Dispose();
+
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        scheduledTasks.Add(temp);
+                                    }
+                                }
                             }
                         }
-
                     }
                 }
                 else if (!cancelAll)//case the flag cancelAll is false
                 {
                     for (int i = 0; i < tasksCount; i++)
                     {
-                        scheduledTasks.TryTake(out temp);
-
-                        if (temp.Scheduler.Enabled == false)//if times is stopped
+                        if(scheduledTasks.TryTake(out temp))
                         {
-                            if (temp.Repeat != "no")//and is set to repeat
+                            if (temp.Scheduler.Enabled == false)//if times is stopped
                             {
-                                temp.renew(GetRenewDate(temp.TriggerDate, temp.Repeat));//updates trigger time
+                                if (temp.Repeat != "no")//and is set to repeat
+                                {
+                                    temp.renew(GetRenewDate(temp.TriggerDate, temp.Repeat));//updates trigger time
 
-                                scheduledTasks.Add(temp);//add it back to the list
+                                    scheduledTasks.Add(temp);//add it back to the list
+                                }
+                                else
+                                {
+                                    temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
+                                }
                             }
                             else
                             {
-                                temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
+                                scheduledTasks.Add(temp);//add it back to the list
                             }
                         }
                     }
@@ -154,16 +175,17 @@ namespace Domus
                 {
                     for (int i = 0; i < tasksCount; i++)
                     {
-                        scheduledTasks.TryTake(out temp);
-
-                        if (temp.Scheduler.Enabled == false)//if times is stopped
+                        if (scheduledTasks.TryTake(out temp))
                         {
-                            temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
-                        }
-                        else
-                        {
-                            temp.Scheduler.Stop();
-                            temp.Scheduler.Dispose();
+                            if (temp.Scheduler.Enabled == false)//if times is stopped
+                            {
+                                temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
+                            }
+                            else
+                            {
+                                temp.Scheduler.Stop();
+                                temp.Scheduler.Dispose();
+                            }
                         }
                     }
 
@@ -185,7 +207,9 @@ namespace Domus
 
             TaskId = taskId;
 
-            Scheduler = new System.Timers.Timer((triggerDate - DateTime.Now).TotalMilliseconds);
+            double temp = (triggerDate - DateTime.Now).TotalMilliseconds;
+
+            Scheduler = new System.Timers.Timer(temp);
 
             Scheduler.Elapsed += async (sender, e) => await task();
 
@@ -204,7 +228,7 @@ namespace Domus
         {
             try
             {
-               Scheduler.Interval = (renewTo - DateTime.Now).TotalMilliseconds;
+                Scheduler.Interval = (renewTo - DateTime.Now).TotalMilliseconds;
 
                 TriggerDate = renewTo;
 

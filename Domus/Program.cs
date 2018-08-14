@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
@@ -30,14 +31,16 @@ namespace Domus
         private static Forecast forecast;
         private static TaskScheduler scheduler = new TaskScheduler();//scheduler.scheduleTask(DateTime.Now + new TimeSpan(0, 0, 10), async ()=> {Teste();}, "Hourly");
         private static ILog log;
+        private static TcpListener deviceServer = null;
+        private static TcpListener clientServer = null;
+        private static Thread deviceListener = null;
+        private static Thread clientListener = null;
 
         static void Main(string[] args)
         {
-            TcpListener deviceServer = null;
-            TcpListener clientServer = null;
-            Thread deviceListener = null;
-            Thread clientListener = null;
             Thread connectionCleaner = null;
+
+            AppDomain.CurrentDomain.ProcessExit += onSystemshutdown;
             
             Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
@@ -204,6 +207,55 @@ namespace Domus
             }
 
             return;
+        }
+
+        static void StopRoutine()
+        {
+            try
+            {
+                log.Info("Disconnecting all clients and devices...");
+                desligar = true;
+
+                // Stop listening for new clients.
+                log.Info("Stopping listeners...");
+
+                deviceServer.Stop();
+                clientServer.Stop();
+
+                JoinAllConnections();//Wait for all clients and devices to disconnect
+
+                if (deviceListener != null && deviceListener.IsAlive)
+                    deviceListener.Join();
+                if (clientListener != null && clientListener.IsAlive)
+                    clientListener.Join();
+
+                log.Info("Stopped");
+
+                log.Info("Cleaning scheduled tasks...");
+
+                scheduler.DeleteAllTasks();
+
+                while (scheduler.TasksCount() != 0)
+                {
+                    Thread.Sleep(100);
+                }
+
+                log.Info("Cleared");
+
+                log.Info("Server Stoped.");
+            }
+            catch (Exception e)
+            {
+                log.Error("Error on server close routine - " + e.Message, e);
+            }
+        }
+
+        private static void onSystemshutdown(object sender, EventArgs e)
+        {
+            if (!desligar)
+            {
+                StopRoutine();
+            }
         }
 
         //função que cria a conexão com a rede

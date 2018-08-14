@@ -57,6 +57,27 @@ namespace Domus
             cancelAll = true;
         }
 
+        public int TasksCount()
+        {
+            return scheduledTasks.Count;
+        }
+
+        public DateTime GetNextWeekday(DateTime start, DayOfWeek day)
+        {
+
+            if (start.DayOfWeek == day)//caso seja necessário adicionar 7 dias
+            {
+                return start.AddDays(7);
+            }
+            else
+            {
+                // O (... + 7) % 7 garante que seja obtido um valor entre [0, 6]
+                int daysToAdd = ((int)day - (int)start.DayOfWeek + 7) % 7;
+
+                return start.AddDays(daysToAdd);
+            }
+        }
+
         private double GetNextId()
         {
             return ++idCounter;
@@ -85,23 +106,7 @@ namespace Domus
                 throw new Exception("Renew mode '"+ repeat +"' not found.");
             }
         }
-
-        public DateTime GetNextWeekday(DateTime start, DayOfWeek day)
-        {
-
-            if (start.DayOfWeek == day)//caso seja necessário adicionar 7 dias
-            {
-                return start.AddDays(7);
-            }
-            else
-            {
-                // O (... + 7) % 7 garante que seja obtido um valor entre [0, 6]
-                int daysToAdd = ((int)day - (int)start.DayOfWeek + 7) % 7;
-
-                return start.AddDays(daysToAdd);
-            }
-        }
-
+        
         private void SchedulerThread()
         {
             while (true)

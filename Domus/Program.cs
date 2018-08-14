@@ -184,6 +184,17 @@ namespace Domus
 
                 log.Info("Stopped");
 
+                log.Info("Cleaning scheduled tasks...");
+
+                scheduler.DeleteAllTasks();
+
+                while (scheduler.TasksCount() != 0)
+                {
+                    Thread.Sleep(100);
+                }
+
+                log.Info("Cleared");
+
                 log.Info("Saving configs...");
                 config.SaveConfigs();
                 log.Info("Saved");

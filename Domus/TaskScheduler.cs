@@ -7,8 +7,8 @@ namespace Domus
 {
     class TaskScheduler
     {
-        BlockingCollection<ScheduledTask> scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
-        BlockingCollection<double> deletTasks = new BlockingCollection<double>(new ConcurrentQueue<double>());
+        private static BlockingCollection<ScheduledTask> scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
+        private static BlockingCollection<double> deletTasks = new BlockingCollection<double>(new ConcurrentQueue<double>());
         private Thread schedulerWorker;
         private bool cancelAll = false;
         private double idCounter = 0;
@@ -29,7 +29,7 @@ namespace Domus
 
             temp.Scheduler.AutoReset = false;
 
-            scheduledTasks.TryAdd(temp);
+            scheduledTasks.Add(temp);
 
             return taskId;
         }
@@ -88,9 +88,18 @@ namespace Domus
 
         public DateTime GetNextWeekday(DateTime start, DayOfWeek day)
         {
-            // The (... + 7) % 7 ensures we end up with a value in the range [0, 6]
-            int daysToAdd = ((int)day - (int)start.DayOfWeek + 7) % 7;
-            return start.AddDays(daysToAdd);
+
+            if (start.DayOfWeek == day)//caso seja necessário adicionar 7 dias
+            {
+                return start.AddDays(7);
+            }
+            else
+            {
+                // O (... + 7) % 7 garante que seja obtido um valor entre [0, 6]
+                int daysToAdd = ((int)day - (int)start.DayOfWeek + 7) % 7;
+
+                return start.AddDays(daysToAdd);
+            }
         }
 
         private void SchedulerThread()
@@ -150,6 +159,10 @@ namespace Domus
                                     temp.Scheduler.Dispose();//dispose the timer and thus the ScheduledTask
                                 }
                             }
+                            else
+                            {
+                                scheduledTasks.Add(temp);//add it back to the list
+                            }
                         }
                     }
                 }
@@ -189,7 +202,9 @@ namespace Domus
 
             TaskId = taskId;
 
-            Scheduler = new System.Timers.Timer((triggerDate - DateTime.Now).TotalMilliseconds);
+            double temp = (triggerDate - DateTime.Now).TotalMilliseconds;
+
+            Scheduler = new System.Timers.Timer(temp);
 
             Scheduler.Elapsed += async (sender, e) => await task();
 

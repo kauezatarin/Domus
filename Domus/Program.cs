@@ -218,6 +218,7 @@ namespace Domus
 
         }
 
+        //função que insere os agendamentos de irrigação
         private static void ScheduleIrrigationTaskts(List<IrrigationSchedule> schedules)
         {
             foreach (IrrigationSchedule schedule in schedules)
@@ -232,32 +233,59 @@ namespace Domus
 
                 if (schedule.active)
                 {
-                    if(schedule.sunday)
+                    if (schedule.sunday)
+                    {
                         scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Sunday), TurnOnIrrigation, "weekly");
 
-                    if(schedule.moonday)
+                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                    }
+
+                    if (schedule.moonday)
+                    {
                         scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Monday), TurnOnIrrigation, "weekly");
 
+                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                    }
+
                     if (schedule.tuesday)
+                    {
                         scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Tuesday), TurnOnIrrigation, "weekly");
 
+                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                    }
+
                     if (schedule.wednesday)
+                    {
                         scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Wednesday), TurnOnIrrigation, "weekly");
 
+                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                    }
+
                     if (schedule.thursday)
+                    {
                         scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Thursday), TurnOnIrrigation, "weekly");
 
+                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                    }
+
                     if (schedule.friday)
+                    {
                         scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Friday), TurnOnIrrigation, "weekly");
 
+                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                    }
+
                     if (schedule.saturday)
+                    {
                         scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Saturday), TurnOnIrrigation, "weekly");
 
-                    log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                    }
                 }
             }
         }
 
+        //função que impede que o servidor morra antes de receber o comando de desligamento
         private static void WaitKillCommand()
         {
             while (!desligar)
@@ -266,6 +294,7 @@ namespace Domus
             }
         }
 
+        //função que aguarda o comando de encerramento do servidor
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             if (e.SpecialKey == ConsoleSpecialKey.ControlC)
@@ -1004,6 +1033,7 @@ namespace Domus
             }
         }
 
+        //Função que liga a irrigação
         static async Task TurnOnIrrigation()
         {
             log.Info("Irrigation turned on.");

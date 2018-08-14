@@ -913,11 +913,20 @@ namespace Domus
             }
             else if (data.Contains("AddUser"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 try
                 {
                     ClientWrite(stream, "sendNewUser");
 
-                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an UpdateUser request.");
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an AddUser request.");
 
                     User temp = (User)ClientReadSerilized(stream, 30000);
 
@@ -925,11 +934,11 @@ namespace Domus
 
                     ClientWrite(stream, "UserAdded");
 
-                    log.Info("The UpdateUser request from " + user.username + "@" + me.clientIP + " was successfullycompleted and updated the user " + temp.username + ".");
+                    log.Info("The AddUser request from " + user.username + "@" + me.clientIP + " was successfullycompleted and created the user " + temp.username + ".");
                 }
                 catch (Exception e)
                 {
-                    log.Error("Error on complete UpdateUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
+                    log.Error("Error on complete AddUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToAdd");
                 }

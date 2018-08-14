@@ -169,46 +169,13 @@ namespace Domus
             }
             finally
             {
-                log.Info("Disconnecting all clients and devices...");
-                desligar = true;
-
-                // Stop listening for new clients.
-                log.Info("Stopping listeners...");
-
-                deviceServer.Stop();
-                clientServer.Stop();
-
-                JoinAllConnections();//Wait for all clients and devices to disconnect
-
-                if (deviceListener != null && deviceListener.IsAlive)
-                    deviceListener.Join();
-                if (clientListener != null && clientListener.IsAlive)
-                    clientListener.Join();
-
-                log.Info("Stopped");
-
-                log.Info("Cleaning scheduled tasks...");
-
-                scheduler.DeleteAllTasks();
-
-                while (scheduler.TasksCount() != 0)
-                {
-                    Thread.Sleep(100);
-                }
-
-                log.Info("Cleared");
-
-                log.Info("Saving configs...");
-                config.SaveConfigs();
-                log.Info("Saved");
-
-                log.Info("Server Stoped.");
-
+                StopRoutine();
             }
 
             return;
         }
 
+        //rotina executada quando o servidor está sendo encerrado
         static void StopRoutine()
         {
             try
@@ -250,6 +217,7 @@ namespace Domus
             }
         }
 
+        //metodo chamado quando o servidor recebe um SIGterm
         private static void onSystemshutdown(object sender, EventArgs e)
         {
             if (!desligar)

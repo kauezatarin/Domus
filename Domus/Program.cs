@@ -832,6 +832,15 @@ namespace Domus
             }
             else if (data.Contains("listdevices"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 int cont = 0;
 
                 foreach (var device in DeviceConnections.ToList())
@@ -848,6 +857,15 @@ namespace Domus
             }
             else if (data.Contains("listUsers"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP +"is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 try
                 {
                     List<User> Users = DatabaseHandler.GetAllUsers(connectionString);
@@ -863,6 +881,15 @@ namespace Domus
             }
             else if (data.Contains("UpdateUser"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 try
                 {
                     ClientWrite(stream, "sendUser");
@@ -909,6 +936,15 @@ namespace Domus
             }
             else if (data.Contains("DeleteUser"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 try
                 {
                     log.Info("User " + user.username + "@" + me.clientIP + " has sent an DeleteUser request.");
@@ -956,6 +992,15 @@ namespace Domus
             }
             else if (data.Contains("ResetPasswd"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 try
                 {
                     log.Info("User " + user.username + "@" + me.clientIP + " has sent an ResetPasswd request.");

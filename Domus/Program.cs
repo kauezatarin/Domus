@@ -167,10 +167,6 @@ namespace Domus
             {
                 log.Fatal("SocketException: " + e.Message, e);
             }
-            finally
-            {
-                StopRoutine();
-            }
 
             return;
         }
@@ -220,10 +216,7 @@ namespace Domus
         //metodo chamado quando o servidor recebe um SIGterm
         private static void onSystemshutdown(object sender, EventArgs e)
         {
-            if (!desligar)
-            {
-                StopRoutine();
-            }
+                StopRoutine();   
         }
 
         //função que cria a conexão com a rede
@@ -832,6 +825,15 @@ namespace Domus
             }
             else if (data.Contains("listdevices"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 int cont = 0;
 
                 foreach (var device in DeviceConnections.ToList())
@@ -848,6 +850,15 @@ namespace Domus
             }
             else if (data.Contains("listUsers"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP +"is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 try
                 {
                     List<User> Users = DatabaseHandler.GetAllUsers(connectionString);
@@ -863,6 +874,15 @@ namespace Domus
             }
             else if (data.Contains("UpdateUser"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 try
                 {
                     ClientWrite(stream, "sendUser");
@@ -886,29 +906,61 @@ namespace Domus
             }
             else if (data.Contains("AddUser"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 try
                 {
                     ClientWrite(stream, "sendNewUser");
 
-                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an UpdateUser request.");
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an AddUser request.");
 
-                    User temp = (User)ClientReadSerilized(stream, 30000);
+                    User temp = (User) ClientReadSerilized(stream, 30000);
 
                     DatabaseHandler.InsertUser(connectionString, temp);
 
                     ClientWrite(stream, "UserAdded");
 
-                    log.Info("The UpdateUser request from " + user.username + "@" + me.clientIP + " was successfullycompleted and updated the user " + temp.username + ".");
+                    log.Info("The AddUser request from " + user.username + "@" + me.clientIP +
+                             " was successfullycompleted and created the user " + temp.username + ".");
+                }
+                catch (MySqlException e)
+                {
+                    if (e.Number == 1062)
+                    {
+                        log.Warn("Error on complete AddUser request from client " + user.username + "@" + me.clientIP + " - " + e.Number + " - " + e.Message);
+                        ClientWrite(stream, "UserAlreadyExists");
+                    }
+                    else
+                    {
+                        log.Error("Error on complete AddUser request from client " + user.username + "@" + me.clientIP + " - " + e.Number + " - " + e.Message, e);
+                        ClientWrite(stream, "FailToAdd");
+                    }
                 }
                 catch (Exception e)
                 {
-                    log.Error("Error on complete UpdateUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
+                    log.Error("Error on complete AddUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToAdd");
                 }
             }
             else if (data.Contains("DeleteUser"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 try
                 {
                     log.Info("User " + user.username + "@" + me.clientIP + " has sent an DeleteUser request.");
@@ -956,6 +1008,15 @@ namespace Domus
             }
             else if (data.Contains("ResetPasswd"))
             {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
                 try
                 {
                     log.Info("User " + user.username + "@" + me.clientIP + " has sent an ResetPasswd request.");

@@ -235,51 +235,65 @@ namespace Domus
                 {
                     if (schedule.sunday)
                     {
-                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Sunday), TurnOnIrrigation, "weekly");
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Sunday);
 
-                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
 
                     if (schedule.moonday)
                     {
-                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Monday), TurnOnIrrigation, "weekly");
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Monday);
 
-                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
 
                     if (schedule.tuesday)
                     {
-                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Tuesday), TurnOnIrrigation, "weekly");
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Tuesday);
 
-                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
 
                     if (schedule.wednesday)
                     {
-                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Wednesday), TurnOnIrrigation, "weekly");
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Wednesday);
 
-                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
 
                     if (schedule.thursday)
                     {
-                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Thursday), TurnOnIrrigation, "weekly");
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Thursday);
 
-                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
 
                     if (schedule.friday)
                     {
-                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Friday), TurnOnIrrigation, "weekly");
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Friday);
 
-                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
 
                     if (schedule.saturday)
                     {
-                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Saturday), TurnOnIrrigation, "weekly");
+                        temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Saturday);
 
-                        log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                        scheduler.ScheduleTask(temp, TurnOnIrrigation, "weekly");
+
+                        log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
                 }
             }

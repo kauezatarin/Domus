@@ -101,7 +101,6 @@ namespace Domus
                     }
                 }
                 
-
                 //Tenta resgatar a previsão do tempo
                 log.Info("Acquiring forecast informations");
 
@@ -126,6 +125,10 @@ namespace Domus
                     temp = temp.AddDays(1);
 
                     scheduler.ScheduleTask(temp, RefreshForecast, "Daily");
+
+                    log.Info("Forecast updater schedule to run daily at 00:00:00");
+
+                    ScheduleIrrigationTaskts(DatabaseHandler.GetAllIrrigationSchedules(connectionString));
 
                     log.Info("Tasks scheduled");
                 }
@@ -217,7 +220,42 @@ namespace Domus
 
         private static void ScheduleIrrigationTaskts(List<IrrigationSchedule> schedules)
         {
+            foreach (IrrigationSchedule schedule in schedules)
+            {
+                DateTime temp = schedule.scheduleTime;
 
+                temp = temp.AddDays(DateTime.Now.Day - temp.Day);
+                temp = temp.AddDays(DateTime.Now.Month - temp.Month);
+                temp = temp.AddDays(DateTime.Now.Year - temp.Year);
+
+                schedule.scheduleTime = temp;
+
+                if (schedule.active)
+                {
+                    if(schedule.sunday)
+                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Sunday), TurnOnIrrigation, "weekly");
+
+                    if(schedule.moonday)
+                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Monday), TurnOnIrrigation, "weekly");
+
+                    if (schedule.tuesday)
+                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Tuesday), TurnOnIrrigation, "weekly");
+
+                    if (schedule.wednesday)
+                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Wednesday), TurnOnIrrigation, "weekly");
+
+                    if (schedule.thursday)
+                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Thursday), TurnOnIrrigation, "weekly");
+
+                    if (schedule.friday)
+                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Friday), TurnOnIrrigation, "weekly");
+
+                    if (schedule.saturday)
+                        scheduler.ScheduleTask(scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Saturday), TurnOnIrrigation, "weekly");
+
+                    log.Info("Irrigation scheduled to " + schedule.scheduleTime.ToString(new CultureInfo("pt-BR")));
+                }
+            }
         }
 
         private static void WaitKillCommand()
@@ -964,6 +1002,11 @@ namespace Domus
             {
                 log.Error("Fail to update forecast informations for "+ config.cityName + ","+ config.countryId + " ==> " + e.Message);
             }
+        }
+
+        static async Task TurnOnIrrigation()
+        {
+            log.Info("Irrigation turned on.");
         }
 
         //Garbage colector que limpa a lista de clientes e devices conectados

@@ -167,10 +167,6 @@ namespace Domus
             {
                 log.Fatal("SocketException: " + e.Message, e);
             }
-            finally
-            {
-                StopRoutine();
-            }
 
             return;
         }
@@ -220,10 +216,7 @@ namespace Domus
         //metodo chamado quando o servidor recebe um SIGterm
         private static void onSystemshutdown(object sender, EventArgs e)
         {
-            if (!desligar)
-            {
-                StopRoutine();
-            }
+                StopRoutine();   
         }
 
         //função que cria a conexão com a rede
@@ -928,13 +921,27 @@ namespace Domus
 
                     log.Info("User " + user.username + "@" + me.clientIP + " has sent an AddUser request.");
 
-                    User temp = (User)ClientReadSerilized(stream, 30000);
+                    User temp = (User) ClientReadSerilized(stream, 30000);
 
                     DatabaseHandler.InsertUser(connectionString, temp);
 
                     ClientWrite(stream, "UserAdded");
 
-                    log.Info("The AddUser request from " + user.username + "@" + me.clientIP + " was successfullycompleted and created the user " + temp.username + ".");
+                    log.Info("The AddUser request from " + user.username + "@" + me.clientIP +
+                             " was successfullycompleted and created the user " + temp.username + ".");
+                }
+                catch (MySqlException e)
+                {
+                    if (e.Number == 1062)
+                    {
+                        log.Warn("Error on complete AddUser request from client " + user.username + "@" + me.clientIP + " - " + e.Number + " - " + e.Message);
+                        ClientWrite(stream, "UserAlreadyExists");
+                    }
+                    else
+                    {
+                        log.Error("Error on complete AddUser request from client " + user.username + "@" + me.clientIP + " - " + e.Number + " - " + e.Message, e);
+                        ClientWrite(stream, "FailToAdd");
+                    }
                 }
                 catch (Exception e)
                 {

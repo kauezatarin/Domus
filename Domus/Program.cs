@@ -129,7 +129,7 @@ namespace Domus
 
                     scheduler.ScheduleTask(temp, RefreshForecast, "Daily");
 
-                    log.Info("Forecast updater schedule to run daily at 00:00:00");
+                    log.Info("Forecast updater scheduled to run daily at 00:00:00");
 
                     ScheduleIrrigationTaskts(DatabaseHandler.GetAllIrrigationSchedules(connectionString));
 

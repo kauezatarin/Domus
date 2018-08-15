@@ -64,8 +64,7 @@ namespace Domus
 
         public DateTime GetNextWeekday(DateTime start, DayOfWeek day)
         {
-
-            if (start.DayOfWeek == day)//caso seja necessário adicionar 7 dias
+            if ((start - DateTime.Now).TotalMilliseconds < 0 && start.DayOfWeek == day)//caso seja necessário adicionar 7 dias
             {
                 return start.AddDays(7);
             }

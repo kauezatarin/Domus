@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Domus
 {
-    class TaskScheduler
+    public abstract class TaskScheduler
     {
         private static BlockingCollection<ScheduledTask> scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
         private static BlockingCollection<double> deletTasks = new BlockingCollection<double>(new ConcurrentQueue<double>());
@@ -13,7 +14,7 @@ namespace Domus
         private bool cancelAll = false;
         private double idCounter = 0;
 
-        public TaskScheduler()
+        protected TaskScheduler()
         {
             schedulerWorker = new Thread(SchedulerThread);
             schedulerWorker.Name = "Scheduler";
@@ -43,10 +44,14 @@ namespace Domus
             try
             {
                 deletTasks.Add(taskId);
+
+                Log("Task " + taskId + "deleted.");
             }
-            catch
+            catch(Exception e)
             {
                 success = false;
+
+                Log("Fail on delete task" + taskId + " - " + e.Message, e);
             }
             
             return success;
@@ -83,26 +88,35 @@ namespace Domus
         }
 
         private DateTime GetRenewDate(DateTime actualTriggerDate, string repeat)
-        { 
-            if (repeat == "weekly")
+        {
+            try
             {
-                return GetNextWeekday(actualTriggerDate, actualTriggerDate.DayOfWeek);
+                if (repeat == "weekly")
+                {
+                    return GetNextWeekday(actualTriggerDate, actualTriggerDate.DayOfWeek);
+                }
+                else if (repeat == "daily")
+                {
+                    return actualTriggerDate.AddDays(1);
+                }
+                else if (repeat == "hourly")
+                {
+                    return actualTriggerDate.AddHours(1);
+                }
+                else if (repeat == "hafhourly")
+                {
+                    return actualTriggerDate.AddMinutes(30);
+                }
+                else
+                {
+                    throw new Exception("Renew mode '" + repeat + "' not found.");
+                }
             }
-            else if (repeat == "daily")
+            catch (Exception e)
             {
-                return actualTriggerDate.AddDays(1);
-            }
-            else if (repeat == "hourly")
-            {
-                return actualTriggerDate.AddHours(1);
-            }
-            else if (repeat == "hafhourly")
-            {
-                return actualTriggerDate.AddMinutes(30);
-            }
-            else
-            {
-                throw new Exception("Renew mode '"+ repeat +"' not found.");
+                Log("Fail to get new run date. - " + e.Message ,e);
+
+                return actualTriggerDate;
             }
         }
         
@@ -154,9 +168,17 @@ namespace Domus
                             {
                                 if (temp.Repeat != "no")//and is set to repeat
                                 {
-                                    temp.renew(GetRenewDate(temp.TriggerDate, temp.Repeat));//updates trigger time
+                                    DateTime newDateTime = GetRenewDate(temp.TriggerDate, temp.Repeat);
 
-                                    scheduledTasks.Add(temp);//add it back to the list
+                                    if (newDateTime != temp.TriggerDate)//case receives a new date (if receives the same date means that an error was occurred on getting a new date.)
+                                    {
+                                        temp.renew(newDateTime);//updates trigger time
+
+                                        scheduledTasks.Add(temp);//add it back to the list
+
+                                        Log("Task " + temp.TaskId + " was renewed and will run at " + newDateTime.ToString(new CultureInfo("pt-BR")));
+                                    }
+                                    
                                 }
                                 else
                                 {
@@ -194,6 +216,9 @@ namespace Domus
                 Thread.Sleep(3000);
             }
         }
+
+        protected abstract void Log(string message, Exception e = null);
+
     }
 
     class ScheduledTask

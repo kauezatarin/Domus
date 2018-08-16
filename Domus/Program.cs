@@ -29,7 +29,7 @@ namespace Domus
         private static string connectionString;
         private static WeatherHandler Weather;
         private static Forecast forecast;
-        private static TaskScheduler scheduler = new TaskScheduler();//scheduler.scheduleTask(DateTime.Now + new TimeSpan(0, 0, 10), async ()=> {Teste();}, "Hourly");
+        private static TaskScheduler scheduler;//scheduler.scheduleTask(DateTime.Now + new TimeSpan(0, 0, 10), async ()=> {Teste();}, "Hourly");
         private static ILog log;
         private static TcpListener deviceServer = null;
         private static TcpListener clientServer = null;
@@ -62,6 +62,8 @@ namespace Domus
             log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
             #endregion
+
+            scheduler = new TaskSchedulerHandler(log);
 
             try
             {

@@ -83,20 +83,20 @@ namespace Domus
         }
 
         private DateTime GetRenewDate(DateTime actualTriggerDate, string repeat)
-        {
-            if (repeat == "Weekly")
+        { 
+            if (repeat == "weekly")
             {
                 return GetNextWeekday(actualTriggerDate, actualTriggerDate.DayOfWeek);
             }
-            else if (repeat == "Daily")
+            else if (repeat == "daily")
             {
                 return actualTriggerDate.AddDays(1);
             }
-            else if (repeat == "Hourly")
+            else if (repeat == "hourly")
             {
                 return actualTriggerDate.AddHours(1);
             }
-            else if (repeat == "HafHourly")
+            else if (repeat == "hafhourly")
             {
                 return actualTriggerDate.AddMinutes(30);
             }
@@ -202,7 +202,7 @@ namespace Domus
         {
             TriggerDate = triggerDate;
 
-            Repeat = repeat;
+            Repeat = repeat.ToLower();
 
             TaskId = taskId;
 
@@ -215,13 +215,13 @@ namespace Domus
             Scheduler.Start();
         }
 
-        public double TaskId { get; set; }
+        public double TaskId { get; private set; }
 
-        public string Repeat { get; set; }
+        public string Repeat { get; private set; }
 
         public DateTime TriggerDate { get; set; }
 
-        public System.Timers.Timer Scheduler { get; set; }
+        public System.Timers.Timer Scheduler { get; private set; }
 
         public bool renew(DateTime renewTo)
         {

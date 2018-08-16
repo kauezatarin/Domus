@@ -631,7 +631,7 @@ namespace Domus
             String data = null;
             NetworkStream stream;
             User user = null;
-            bool lostConnection = false, isLoggedIn = false, isClient = false;
+            bool lostConnection = false, isLoggedIn = false;
             int i, timeOutCounter = 0;
             int timeOutTime = 10 * 60 * 1000;//10 minutos
 

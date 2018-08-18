@@ -375,6 +375,66 @@ namespace Domus
         }
 
         /// <summary>
+        /// Deleta um dispositivo no banco
+        /// </summary>
+        public static void DeleteDevice(string connectionString, string deviceId)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "DELETE FROM devices WHERE device_id='" + deviceId + "'";
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retorna uma lista contendo todos os dispositivos cadastrados
+        /// </summary>
+        public static List<Device> GetAllDevices(string connectionString)
+        {
+            List<Device> devices = new List<Device>();
+            Device temp;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM devices";
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            while (dataReader.Read())
+                            {
+                                temp = Maper.MapDevice(dataReader);
+
+                                devices.Add(temp);
+                            }
+                        }
+
+                        return devices;
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
+        /// <summary>
         /// Retorna uma lista contendo todos os usuários cadastrados
         /// </summary>
         public static List<User> GetAllUsers(string connectionString)

@@ -813,7 +813,7 @@ namespace Domus
 
         private static void ExecuteClientAction(NetworkStream stream, string data, ConnectionCommandStore me, User user)
         {
-            if (data.Contains("listDevices"))
+            if (data.Contains("ListDevices"))
             {
                 if (!user.isAdmin)
                 {
@@ -837,7 +837,7 @@ namespace Domus
                     log.Error("Fail to list all devices to user " + user.username + "@" + me.clientIP + " - " + e.Message, e);
                 }
             }
-            else if (data.Contains("addDevice"))
+            else if (data.Contains("AddDevice"))
             {
                 if (!user.isAdmin)
                 {
@@ -883,6 +883,38 @@ namespace Domus
                     ClientWrite(stream, "FailToAdd");
                 }
             }
+            else if (data.Contains("UpdateDevice"))
+            {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to update a device but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    ClientWrite(stream, "SendDevice");
+
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an UpdateDevice request.");
+
+                    Device temp = (Device)ClientReadSerilized(stream, 30000);
+
+                    DatabaseHandler.UpdateDevice(connectionString, temp);
+
+                    ClientWrite(stream, "DeviceUpdated");
+
+                    log.Info("The UpdateDevice request from " + user.username + "@" + me.clientIP + " was successfullycompleted and updated the device " + temp.deviceName + ".");
+                }
+                catch (Exception e)
+                {
+                    log.Error("Error on complete UpdateUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToUpdate");
+                }
+            }
             else if (data.Contains("DeleteDevice"))
             {
                 if (!user.isAdmin)
@@ -911,7 +943,7 @@ namespace Domus
                     ClientWrite(stream, "FailToDelete");
                 }
             }
-            else if (data.Contains("listUsers"))
+            else if (data.Contains("ListUsers"))
             {
                 if (!user.isAdmin)
                 {
@@ -1097,7 +1129,7 @@ namespace Domus
                     ClientWrite(stream, "FailToResetPasswd");
                 }
             }
-            else if (data.Contains("getWeather"))
+            else if (data.Contains("GetWeather"))
             {
                 try
                 {

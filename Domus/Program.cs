@@ -7,7 +7,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Loader;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
@@ -29,7 +28,7 @@ namespace Domus
         private static string connectionString;
         private static WeatherHandler Weather;
         private static Forecast forecast;
-        private static TaskScheduler scheduler = new TaskScheduler();//scheduler.scheduleTask(DateTime.Now + new TimeSpan(0, 0, 10), async ()=> {Teste();}, "Hourly");
+        private static TaskScheduler scheduler;//scheduler.scheduleTask(DateTime.Now + new TimeSpan(0, 0, 10), async ()=> {Teste();}, "Hourly");
         private static ILog log;
         private static TcpListener deviceServer = null;
         private static TcpListener clientServer = null;
@@ -62,6 +61,8 @@ namespace Domus
             log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
             #endregion
+
+            scheduler = new TaskSchedulerHandler(log);
 
             try
             {
@@ -261,7 +262,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Sunday);
 
-                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "Weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -270,7 +271,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Monday);
 
-                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "Weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -279,7 +280,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Tuesday);
 
-                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "Weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -288,7 +289,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Wednesday);
 
-                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "Weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -297,7 +298,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Thursday);
 
-                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "Weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -306,7 +307,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Friday);
 
-                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "Weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -315,7 +316,7 @@ namespace Domus
                     {
                         temp = scheduler.GetNextWeekday(schedule.scheduleTime, DayOfWeek.Saturday);
 
-                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "weekly");
+                        scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.runFor), "Weekly");
 
                         log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -629,7 +630,7 @@ namespace Domus
             String data = null;
             NetworkStream stream;
             User user = null;
-            bool lostConnection = false, isLoggedIn = false, isClient = false;
+            bool lostConnection = false, isLoggedIn = false;
             int i, timeOutCounter = 0;
             int timeOutTime = 10 * 60 * 1000;//10 minutos
 
@@ -811,44 +812,137 @@ namespace Domus
 
         private static void ExecuteClientAction(NetworkStream stream, string data, ConnectionCommandStore me, User user)
         {
-            if (data.StartsWith("banip"))
-            {
-                config.AddBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
-                log.Info("User "+ user.username + "@"+ me.clientIP + " has banned the ip " + data.Split(' ')[1]);
-                ClientWrite(stream, "You have banned " + data.Split(' ')[1]);
-            }
-            else if (data.StartsWith("unbanip"))
-            {
-                config.RemoveBannedIp(data.Split(' ')[1].Replace("\r\n", ""));
-                log.Info("User " + user.username + "@" + me.clientIP + " has unbanned the ip " + data.Split(' ')[1]);
-                ClientWrite(stream, "You have unbanned " + data.Split(' ')[1]);
-            }
-            else if (data.Contains("listdevices"))
+            if (data.Contains("ListDevices"))
             {
                 if (!user.isAdmin)
                 {
-                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to list devices but does not have permission.");
 
                     ClientWrite(stream, "noPermission");
 
                     return;
                 }
 
-                int cont = 0;
-
-                foreach (var device in DeviceConnections.ToList())
+                try
                 {
-                    if (device.conexao.IsAlive)
-                    {
-                        ClientWrite(stream, device.deviceName + Environment.NewLine);
-                        cont++;
-                    }
+                    List<Device> Devices = DatabaseHandler.GetAllDevices(connectionString);
+
+                    ClientWriteSerialized(stream, Devices);
+
+                    log.Info("Listed all devices to user " + user.username + "@" + me.clientIP);
+                }
+                catch (Exception e)
+                {
+                    log.Error("Fail to list all devices to user " + user.username + "@" + me.clientIP + " - " + e.Message, e);
+                }
+            }
+            else if (data.Contains("AddDevice"))
+            {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to add a device but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
                 }
 
-                if (cont == 0)
-                    ClientWrite(stream, "noDevices");
+                try
+                {
+                    ClientWrite(stream, "sendNewDevice");
+
+                    log.Info("Device " + user.username + "@" + me.clientIP + " has sent an AddDevice request.");
+
+                    Device temp = (Device)ClientReadSerilized(stream, 30000);
+
+                    DatabaseHandler.InsertDevice(connectionString, temp);
+
+                    ClientWrite(stream, "DeviceAdded");
+
+                    log.Info("The AddDevice request from " + user.username + "@" + me.clientIP +
+                             " was successfullycompleted and created the device " + temp.deviceId + ".");
+                }
+                catch (MySqlException e)
+                {
+                    if (e.Number == 1062)
+                    {
+                        log.Warn("Error on complete AddDevice request from client " + user.username + "@" + me.clientIP + " - " + e.Number + " - " + e.Message);
+                        ClientWrite(stream, "DeviceAlreadyExists");
+                    }
+                    else
+                    {
+                        log.Error("Error on complete AddDevice request from client " + user.username + "@" + me.clientIP + " - " + e.Number + " - " + e.Message, e);
+                        ClientWrite(stream, "FailToAdd");
+                    }
+                }
+                catch (Exception e)
+                {
+                    log.Error("Error on complete AddDevice request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToAdd");
+                }
             }
-            else if (data.Contains("listUsers"))
+            else if (data.Contains("UpdateDevice"))
+            {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to update a device but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    ClientWrite(stream, "SendDevice");
+
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an UpdateDevice request.");
+
+                    Device temp = (Device)ClientReadSerilized(stream, 30000);
+
+                    DatabaseHandler.UpdateDevice(connectionString, temp);
+
+                    ClientWrite(stream, "DeviceUpdated");
+
+                    log.Info("The UpdateDevice request from " + user.username + "@" + me.clientIP + " was successfullycompleted and updated the device " + temp.deviceName + ".");
+                }
+                catch (Exception e)
+                {
+                    log.Error("Error on complete UpdateUser request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToUpdate");
+                }
+            }
+            else if (data.Contains("DeleteDevice"))
+            {
+                if (!user.isAdmin)
+                {
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to delet an user but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    log.Info("User " + user.username + "@" + me.clientIP + " has sent an DeleteDevice request.");
+
+                    DatabaseHandler.DeleteDevice(connectionString, data.Split(";")[1]);
+
+                    ClientWrite(stream, "DeviceDeleted");
+
+                    log.Info("The DeleteDevice request from " + user.username + "@" + me.clientIP + " was successfullycompleted and deleted the userId " + data.Split(";")[1] + ".");
+                }
+                catch (Exception e)
+                {
+                    log.Error("Error on complete DeleteDevice request from client " + user.username + "@" + me.clientIP + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToDelete");
+                }
+            }
+            else if (data.Contains("ListUsers"))
             {
                 if (!user.isAdmin)
                 {
@@ -876,7 +970,7 @@ namespace Domus
             {
                 if (!user.isAdmin)
                 {
-                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to update an user but does not have permission.");
 
                     ClientWrite(stream, "noPermission");
 
@@ -908,7 +1002,7 @@ namespace Domus
             {
                 if (!user.isAdmin)
                 {
-                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to add an user but does not have permission.");
 
                     ClientWrite(stream, "noPermission");
 
@@ -954,7 +1048,7 @@ namespace Domus
             {
                 if (!user.isAdmin)
                 {
-                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to delete an user but does not have permission.");
 
                     ClientWrite(stream, "noPermission");
 
@@ -1010,7 +1104,7 @@ namespace Domus
             {
                 if (!user.isAdmin)
                 {
-                    log.Warn(user.username + "@" + me.clientIP + "is trying to list users but does not have permission.");
+                    log.Warn(user.username + "@" + me.clientIP + "is trying to reset the a user's password but does not have permission.");
 
                     ClientWrite(stream, "noPermission");
 
@@ -1034,7 +1128,7 @@ namespace Domus
                     ClientWrite(stream, "FailToResetPasswd");
                 }
             }
-            else if (data.Contains("getWeather"))
+            else if (data.Contains("GetWeather"))
             {
                 try
                 {

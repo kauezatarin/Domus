@@ -253,7 +253,7 @@ namespace Domus
                 try
                 {
                     conn.Open();
-                    cmd.CommandText = "INSERT INTO devices (deviceName,deviceId,deviceType,created_at,last_activity, data1_name, data2_name, data3_name, data4_name, data1_active, data2_active, data3_active, data4_active) values('" + device.deviceName +
+                    cmd.CommandText = "INSERT INTO devices (deviceName,device_id,deviceType,created_at,last_activity, data1_name, data2_name, data3_name, data4_name, data1_active, data2_active, data3_active, data4_active) values('" + device.deviceName +
                                       "','" + device.deviceId +
                                       "','" + device.deviceType +
                                       "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") +
@@ -274,6 +274,39 @@ namespace Domus
                     throw e;
                 }
 
+            }
+        }
+
+        /// <summary>
+        /// Atualiza um dispositivo no banco
+        /// </summary>
+        public static void UpdateDevice(string connectionString, Device device)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "UPDATE devices SET deviceName = '" +
+                                      device.deviceName +
+                                      "', deviceType = " + device.deviceType +
+                                      ", data1_name = '" + device.data1_name +
+                                      "', data2_name = '" + device.data2_name +
+                                      "', data3_name = '" + device.data3_name +
+                                      "', data4_name = '" + device.data4_name +
+                                      "', data1_active = " + device.data1_active +
+                                      ", data2_active = " + device.data2_active +
+                                      ", data3_active = " + device.data3_active +
+                                      ", data4_active = " + device.data4_active +
+                                      " WHERE device_id='" + device.deviceId + "'";
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
             }
         }
 
@@ -366,6 +399,66 @@ namespace Domus
                         return device;
                     }
                     catch (MySqlException e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// Deleta um dispositivo no banco
+        /// </summary>
+        public static void DeleteDevice(string connectionString, string deviceId)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "DELETE FROM devices WHERE device_id='" + deviceId + "'";
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retorna uma lista contendo todos os dispositivos cadastrados
+        /// </summary>
+        public static List<Device> GetAllDevices(string connectionString)
+        {
+            List<Device> devices = new List<Device>();
+            Device temp;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM devices";
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            while (dataReader.Read())
+                            {
+                                temp = Maper.MapDevice(dataReader);
+
+                                devices.Add(temp);
+                            }
+                        }
+
+                        return devices;
+                    }
+                    catch (Exception e)
                     {
                         throw e;
                     }

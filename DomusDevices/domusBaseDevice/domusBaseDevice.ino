@@ -43,7 +43,7 @@ EthernetClient client;
 
 unsigned long data_delay = DATA_DELAY;//delay para envio de dados em segundos
 
-int reconnectDelay = 10 * 1000;//intervalo entre tentativas de conexão
+int reconnectDelay = 10 * 10;//intervalo entre tentativas de conexão x * 10 (10 por conta do loop utilizado)
 unsigned long messageDelay = data_delay * 1000;//intervalo entre envio de dados
 unsigned long lastTime = 0;
 
@@ -51,7 +51,7 @@ String inData = String(100);
 String outData = String(100);
 char c;
 
-bool isDebugging = true;
+bool isDebugging = false;
 
 //sensor de humidade e temperatura
 DHT dht(DHTPIN, DHTTYPE);
@@ -108,7 +108,6 @@ void loop() {
 
   // caso exista uma conexão ativa
   if (client) {
-    
     if (client.connected() == false)
     {
       SerialPrint("Conexão Perdida!", true);
@@ -154,7 +153,15 @@ void loop() {
     tryConnection();
     
     if (!client)
-      delay(reconnectDelay);       
+    {
+      for(int i=0; i<reconnectDelay; i++)
+      {
+        if(Serial.available() > 0)
+          break;
+        else
+          delay(100); 
+      }
+    }      
   }
 }
 

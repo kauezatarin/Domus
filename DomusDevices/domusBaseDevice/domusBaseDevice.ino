@@ -338,6 +338,8 @@ void executeSerialCommand()
     }
 
     EEPROM_save();
+
+    Serial.println("ok");
   }
   else if(command[0] == '3')//caso receba o comando de limpeza reseta a memoria
   {

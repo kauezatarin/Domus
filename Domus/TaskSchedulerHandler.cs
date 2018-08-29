@@ -5,22 +5,22 @@ namespace Domus
 {
     class TaskSchedulerHandler:TaskScheduler
     {
-        private ILog log;
+        private ILog _log;
 
         public TaskSchedulerHandler(ILog log)
         {
-            this.log = log;
+            this._log = log;
         }
 
         protected override void Log(string message, Exception e = null)
         {
             if (e == null)
             {
-                log.Info(message);
+                _log.Info(message);
             }
             else
             {
-                log.Error(message + " - " + e.Message, e);
+                _log.Error(message + " - " + e.Message, e);
             }
         }
     }

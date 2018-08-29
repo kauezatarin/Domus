@@ -6,36 +6,36 @@ namespace Domus
     {
         public ConnectionCommandStore(Thread client)
         {
-            conexao = client;
-            command = null;
-            clientIP = null;
-            deviceType = -1;
-            deviceName = null;
-            dataDelay = 30;
+            Conexao = client;
+            Command = null;
+            ClientIp = null;
+            DeviceType = -1;
+            DeviceName = null;
+            DataDelay = 30;
         }
 
         public ConnectionCommandStore()
         {
-            conexao = null;
-            command = null;
-            clientIP = null;
-            deviceType = -1;
-            deviceName = null;
-            dataDelay = 30;
+            Conexao = null;
+            Command = null;
+            ClientIp = null;
+            DeviceType = -1;
+            DeviceName = null;
+            DataDelay = 30;
         }
 
-        public Thread conexao { get; set; }
+        public Thread Conexao { get; set; }
 
-        public string command { get; set; }
+        public string Command { get; set; }
 
-        public string clientIP { get; set; }
+        public string ClientIp { get; set; }
 
-        public string deviceName { get; set; }
+        public string DeviceName { get; set; }
 
-        public int deviceType { get; set; }
+        public int DeviceType { get; set; }
 
-        public int dataDelay { get; set; }
+        public int DataDelay { get; set; }
 
-        public string deviceUniqueID { get; set; }
+        public string DeviceUniqueId { get; set; }
     }
 }

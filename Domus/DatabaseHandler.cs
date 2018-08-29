@@ -15,9 +15,9 @@ namespace Domus
         /// <summary>
         /// Gera a string de conexão.
         /// </summary>
-        public static string CreateConnectionString(string databaseIP, int databasePort, string databaseName, string databaseUser, string databasePassword = "")
+        public static string CreateConnectionString(string databaseIp, int databasePort, string databaseName, string databaseUser, string databasePassword = "")
         {
-            string connectionString = "SERVER=" + databaseIP + ";" +
+            string connectionString = "SERVER=" + databaseIp + ";" +
                 "PORT=" + databasePort + ";" +
                 "DATABASE=" + databaseName + ";" +
                 "UID=" + databaseUser + ";" +
@@ -115,12 +115,12 @@ namespace Domus
                 try
                 {
                     conn.Open();
-                    cmd.CommandText = "INSERT INTO users (username,password,email,name,last_name,isAdmin,created_at,last_login) values('" + user.username +
-                                      "','" + user.password +
-                                      "','" + user.email +
-                                      "','" + user.name +
-                                      "','" + user.lastName +
-                                      "'," + user.isAdmin +
+                    cmd.CommandText = "INSERT INTO users (username,password,email,name,last_name,isAdmin,created_at,last_login) values('" + user.Username +
+                                      "','" + user.Password +
+                                      "','" + user.Email +
+                                      "','" + user.Name +
+                                      "','" + user.LastName +
+                                      "'," + user.IsAdmin +
                                       ",'" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") +
                                       "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "')";
 
@@ -146,13 +146,13 @@ namespace Domus
                 {
                     conn.Open();
                     cmd.CommandText = "UPDATE users SET username = '" +
-                                      user.username +
-                                      "', email = '"+ user.email +
-                                      "', active = " + user.isActive +
-                                      ", name = '"+ user.name + 
-                                      "', last_name = '"+ user.lastName + 
-                                      "', isAdmin = " + user.isAdmin +
-                                      " WHERE user_id=" + user.userId;
+                                      user.Username +
+                                      "', email = '"+ user.Email +
+                                      "', active = " + user.IsActive +
+                                      ", name = '"+ user.Name + 
+                                      "', last_name = '"+ user.LastName + 
+                                      "', isAdmin = " + user.IsAdmin +
+                                      " WHERE user_id=" + user.UserId;
 
                     cmd.ExecuteNonQuery();
                 }
@@ -253,19 +253,19 @@ namespace Domus
                 try
                 {
                     conn.Open();
-                    cmd.CommandText = "INSERT INTO devices (deviceName,device_id,deviceType,created_at,last_activity, data1_name, data2_name, data3_name, data4_name, data1_active, data2_active, data3_active, data4_active) values('" + device.deviceName +
-                                      "','" + device.deviceId +
-                                      "','" + device.deviceType +
+                    cmd.CommandText = "INSERT INTO devices (deviceName,device_id,deviceType,created_at,last_activity, data1_name, data2_name, data3_name, data4_name, data1_active, data2_active, data3_active, data4_active) values('" + device.DeviceName +
+                                      "','" + device.DeviceId +
+                                      "','" + device.DeviceType +
                                       "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") +
                                       "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") +
-                                      "','" + device.data1_name +
-                                      "','" + device.data2_name +
-                                      "','" + device.data3_name +
-                                      "','" + device.data4_name +
-                                      "'," + device.data1_active +
-                                      "," + device.data2_active +
-                                      "," + device.data3_active +
-                                      "," + device.data4_active + ")";
+                                      "','" + device.Data1Name +
+                                      "','" + device.Data2Name +
+                                      "','" + device.Data3Name +
+                                      "','" + device.Data4Name +
+                                      "'," + device.Data1Active +
+                                      "," + device.Data2Active +
+                                      "," + device.Data3Active +
+                                      "," + device.Data4Active + ")";
 
                     cmd.ExecuteNonQuery();
                 }
@@ -289,17 +289,17 @@ namespace Domus
                 {
                     conn.Open();
                     cmd.CommandText = "UPDATE devices SET deviceName = '" +
-                                      device.deviceName +
-                                      "', deviceType = " + device.deviceType +
-                                      ", data1_name = '" + device.data1_name +
-                                      "', data2_name = '" + device.data2_name +
-                                      "', data3_name = '" + device.data3_name +
-                                      "', data4_name = '" + device.data4_name +
-                                      "', data1_active = " + device.data1_active +
-                                      ", data2_active = " + device.data2_active +
-                                      ", data3_active = " + device.data3_active +
-                                      ", data4_active = " + device.data4_active +
-                                      " WHERE device_id='" + device.deviceId + "'";
+                                      device.DeviceName +
+                                      "', deviceType = " + device.DeviceType +
+                                      ", data1_name = '" + device.Data1Name +
+                                      "', data2_name = '" + device.Data2Name +
+                                      "', data3_name = '" + device.Data3Name +
+                                      "', data4_name = '" + device.Data4Name +
+                                      "', data1_active = " + device.Data1Active +
+                                      ", data2_active = " + device.Data2Active +
+                                      ", data3_active = " + device.Data3Active +
+                                      ", data4_active = " + device.Data4Active +
+                                      " WHERE device_id='" + device.DeviceId + "'";
 
                     cmd.ExecuteNonQuery();
                 }
@@ -321,12 +321,12 @@ namespace Domus
                 try
                 {
                     conn.Open();
-                    cmd.CommandText = "INSERT INTO data (device_id,created_at,data1,data2,data3,data4) values('" + data.device_id +
-                                      "','" + data.createdAt +
-                                      "','" + data.data1 +
-                                      "','" + data.data2 +
-                                      "','" + data.data3 +
-                                      "','" + data.data4 + "')";
+                    cmd.CommandText = "INSERT INTO data (device_id,created_at,data1,data2,data3,data4) values('" + data.DeviceId +
+                                      "','" + data.CreatedAt +
+                                      "','" + data.Data1 +
+                                      "','" + data.Data2 +
+                                      "','" + data.Data3 +
+                                      "','" + data.Data4 + "')";
 
                     cmd.ExecuteNonQuery();
                 }
@@ -341,7 +341,7 @@ namespace Domus
         /// <summary>
         /// Verifica de o dispositivo está cadastrado no banco de dados
         /// </summary>
-        public static bool IsAuthenticDevice(string connectionString, string UID)
+        public static bool IsAuthenticDevice(string connectionString, string uid)
         {
             int count = 0;
  
@@ -352,7 +352,7 @@ namespace Domus
                     try
                     {
                         conn.Open();
-                        cmd.CommandText = "SELECT count(*) FROM devices WHERE device_id = '" + UID +"'";
+                        cmd.CommandText = "SELECT count(*) FROM devices WHERE device_id = '" + uid +"'";
 
                         count = int.Parse(cmd.ExecuteScalar().ToString());
                     }
@@ -377,7 +377,7 @@ namespace Domus
         /// <summary>
         /// Retorna um dispositivo que corresponde o UID informado
         /// </summary>
-        public static Device GetDeviceByUid(string connectionString, string UID)
+        public static Device GetDeviceByUid(string connectionString, string uid)
         {
             Device device;
 
@@ -388,7 +388,7 @@ namespace Domus
                     try
                     {
                         conn.Open();
-                        cmd.CommandText = "SELECT * FROM devices WHERE device_id = '" + UID + "'";
+                        cmd.CommandText = "SELECT * FROM devices WHERE device_id = '" + uid + "'";
                         using (MySqlDataReader dataReader = cmd.ExecuteReader())
                         {
                             dataReader.Read();
@@ -490,7 +490,7 @@ namespace Domus
                             {
                                 temp = Maper.MapUser(dataReader);
 
-                                temp.password = null;
+                                temp.Password = null;
 
                                 users.Add(temp);
                             }

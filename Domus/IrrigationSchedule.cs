@@ -8,42 +8,42 @@ namespace Domus
     {
         public IrrigationSchedule(int scheduleId, string scheduleName, DateTime scheduleTime, int runFor,bool sunday, bool moonday, bool tuesday, bool wednesday, bool thursday, bool friday, bool saturday, bool active)
         {
-            this.ScheduleId = scheduleId;
-            this.ScheduleName = scheduleName;
-            this.ScheduleTime = scheduleTime;
-            this.Sunday = sunday;
-            this.Moonday = moonday;
-            this.Tuesday = tuesday;
-            this.Wednesday = wednesday;
-            this.Thursday = thursday;
-            this.Friday = friday;
-            this.Saturday = saturday;
-            this.Active = active;
-            this.RunFor = runFor;
+            this.scheduleId = scheduleId;
+            this.scheduleName = scheduleName;
+            this.scheduleTime = scheduleTime;
+            this.sunday = sunday;
+            this.moonday = moonday;
+            this.tuesday = tuesday;
+            this.wednesday = wednesday;
+            this.thursday = thursday;
+            this.friday = friday;
+            this.saturday = saturday;
+            this.active = active;
+            this.runFor = runFor;
         }
 
-        public int ScheduleId { get; set; }
+        public int scheduleId { get; set; }
 
-        public string ScheduleName { get; set; }
+        public string scheduleName { get; set; }
 
-        public DateTime ScheduleTime { get; set; }
+        public DateTime scheduleTime { get; set; }
 
-        public int RunFor { get; set; }
+        public int runFor { get; set; }
 
-        public bool Sunday { get; set; }
+        public bool sunday { get; set; }
 
-        public bool Moonday { get; set; }
+        public bool moonday { get; set; }
 
-        public bool Tuesday { get; set; }
+        public bool tuesday { get; set; }
 
-        public bool Wednesday { get; set; }
+        public bool wednesday { get; set; }
 
-        public bool Thursday { get; set; }
+        public bool thursday { get; set; }
 
-        public bool Friday { get; set; }
+        public bool friday { get; set; }
 
-        public bool Saturday { get; set; }
+        public bool saturday { get; set; }
 
-        public bool Active { get; set; }
+        public bool active { get; set; }
     }
 }

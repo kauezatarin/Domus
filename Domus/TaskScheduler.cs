@@ -8,18 +8,18 @@ namespace Domus
 {
     public abstract class TaskScheduler
     {
-        private static BlockingCollection<ScheduledTask> scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
-        private static BlockingCollection<double> deletTasks = new BlockingCollection<double>(new ConcurrentQueue<double>());
-        private Thread schedulerWorker;
-        private bool cancelAll = false;
-        private double idCounter = 0;
+        private static BlockingCollection<ScheduledTask> _scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
+        private static BlockingCollection<double> _deletTasks = new BlockingCollection<double>(new ConcurrentQueue<double>());
+        private Thread _schedulerWorker;
+        private bool _cancelAll = false;
+        private double _idCounter = 0;
 
         protected TaskScheduler()
         {
-            schedulerWorker = new Thread(SchedulerThread);
-            schedulerWorker.Name = "Scheduler";
-            schedulerWorker.IsBackground = true;
-            schedulerWorker.Start();
+            _schedulerWorker = new Thread(SchedulerThread);
+            _schedulerWorker.Name = "Scheduler";
+            _schedulerWorker.IsBackground = true;
+            _schedulerWorker.Start();
         }
 
         public double ScheduleTask(DateTime runDateTime, Func<Task> taskFunc, string repeat = "no")
@@ -30,7 +30,7 @@ namespace Domus
 
             temp.Scheduler.AutoReset = false;
 
-            scheduledTasks.Add(temp);
+            _scheduledTasks.Add(temp);
 
             return taskId;
         }
@@ -39,11 +39,11 @@ namespace Domus
         {
             bool success = true;
 
-            int tasksCount = scheduledTasks.Count;
+            int tasksCount = _scheduledTasks.Count;
 
             try
             {
-                deletTasks.Add(taskId);
+                _deletTasks.Add(taskId);
 
                 Log("Task " + taskId + "deleted.");
             }
@@ -59,12 +59,12 @@ namespace Domus
 
         public void DeleteAllTasks()
         {
-            cancelAll = true;
+            _cancelAll = true;
         }
 
         public int TasksCount()
         {
-            return scheduledTasks.Count;
+            return _scheduledTasks.Count;
         }
 
         public DateTime GetNextWeekday(DateTime start, DayOfWeek day)
@@ -84,7 +84,7 @@ namespace Domus
 
         private double GetNextId()
         {
-            return ++idCounter;
+            return ++_idCounter;
         }
 
         private DateTime GetRenewDate(DateTime actualTriggerDate, string repeat)
@@ -126,19 +126,19 @@ namespace Domus
             {
                 ScheduledTask temp;
                 double tempId;
-                int tasksCount = scheduledTasks.Count;
-                int toDeleteCount = deletTasks.Count;
+                int tasksCount = _scheduledTasks.Count;
+                int toDeleteCount = _deletTasks.Count;
 
                 if (toDeleteCount > 0)//case there are itens to delete
                 {
                     for (int i = 0; i < toDeleteCount; i++)
                     {
-                        if (deletTasks.TryTake(out tempId))
+                        if (_deletTasks.TryTake(out tempId))
                         {
                             for (int j = 0; j < tasksCount; j++)
                             {
 
-                                if (scheduledTasks.TryTake(out temp))
+                                if (_scheduledTasks.TryTake(out temp))
                                 {
                                     if (temp.TaskId == tempId)//item found
                                     {
@@ -151,18 +151,18 @@ namespace Domus
                                     }
                                     else
                                     {
-                                        scheduledTasks.Add(temp);
+                                        _scheduledTasks.Add(temp);
                                     }
                                 }
                             }
                         }
                     }
                 }
-                else if (!cancelAll)//case the flag cancelAll is false
+                else if (!_cancelAll)//case the flag cancelAll is false
                 {
                     for (int i = 0; i < tasksCount; i++)
                     {
-                        if(scheduledTasks.TryTake(out temp))
+                        if(_scheduledTasks.TryTake(out temp))
                         {
                             if (temp.Scheduler.Enabled == false)//if times is stopped
                             {
@@ -172,9 +172,9 @@ namespace Domus
 
                                     if (newDateTime != temp.TriggerDate)//case receives a new date (if receives the same date means that an error was occurred on getting a new date.)
                                     {
-                                        temp.renew(newDateTime);//updates trigger time
+                                        temp.Renew(newDateTime);//updates trigger time
 
-                                        scheduledTasks.Add(temp);//add it back to the list
+                                        _scheduledTasks.Add(temp);//add it back to the list
 
                                         Log("Task " + temp.TaskId + " was renewed and will run at " + newDateTime.ToString(new CultureInfo("pt-BR")));
                                     }
@@ -187,7 +187,7 @@ namespace Domus
                             }
                             else
                             {
-                                scheduledTasks.Add(temp);//add it back to the list
+                                _scheduledTasks.Add(temp);//add it back to the list
                             }
                         }
                     }
@@ -196,7 +196,7 @@ namespace Domus
                 {
                     for (int i = 0; i < tasksCount; i++)
                     {
-                        if (scheduledTasks.TryTake(out temp))
+                        if (_scheduledTasks.TryTake(out temp))
                         {
                             if (temp.Scheduler.Enabled == false)//if times is stopped
                             {
@@ -210,7 +210,7 @@ namespace Domus
                         }
                     }
 
-                    cancelAll = false;
+                    _cancelAll = false;
                 }
 
                 Thread.Sleep(3000);
@@ -248,7 +248,7 @@ namespace Domus
 
         public System.Timers.Timer Scheduler { get; private set; }
 
-        public bool renew(DateTime renewTo)
+        public bool Renew(DateTime renewTo)
         {
             try
             {

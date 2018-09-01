@@ -7,47 +7,47 @@ namespace DomusSharedClasses
     [Serializable]
     public class Device
     {
-        public Device(string deviceName, int deviceType, string createdAt, string lastActivity, string deviceId = null, bool data1Active = false, bool data2Active = false, bool data3Active = false, bool data4Active = false, string data1Name = " ", string data2Name = " ", string data3Name = " ", string data4Name = " ")
+        public Device(string deviceName, int deviceType, string createdAt, string lastActivity, string deviceId = null, bool data1_active = false, bool data2_active = false, bool data3_active = false, bool data4_active = false, string data1_name = " ", string data2_name = " ", string data3_name = " ", string data4_name = " ")
         {
-            this.DeviceId = deviceId;
-            this.DeviceName = deviceName;
-            this.DeviceType = deviceType;
-            this.CreatedAt = createdAt;
-            this.LastActivity = lastActivity;
-            this.Data1Active = data1Active;
-            this.Data2Active = data2Active;
-            this.Data3Active = data3Active;
-            this.Data4Active = data4Active;
-            this.Data1Name = data1Name;
-            this.Data2Name = data2Name;
-            this.Data3Name = data3Name;
-            this.Data4Name = data4Name;
+            this.deviceId = deviceId;
+            this.deviceName = deviceName;
+            this.deviceType = deviceType;
+            this.createdAt = createdAt;
+            this.lastActivity = lastActivity;
+            this.data1_active = data1_active;
+            this.data2_active = data2_active;
+            this.data3_active = data3_active;
+            this.data4_active = data4_active;
+            this.data1_name = data1_name;
+            this.data2_name = data2_name;
+            this.data3_name = data3_name;
+            this.data4_name = data4_name;
         }
 
-        public string DeviceId { get; set; }
+        public string deviceId { get; set; }
 
-        public string DeviceName { get; set; }
+        public string deviceName { get; set; }
 
-        public int DeviceType { get; set; }
+        public int deviceType { get; set; }
 
-        public string CreatedAt { get; set; }
+        public string createdAt { get; set; }
 
-        public string LastActivity { get; set; }
+        public string lastActivity { get; set; }
 
-        public string Data1Name { get; set; }
+        public string data1_name { get; set; }
 
-        public string Data2Name { get; set; }
+        public string data2_name { get; set; }
 
-        public string Data3Name { get; set; }
+        public string data3_name { get; set; }
 
-        public string Data4Name { get; set; }
+        public string data4_name { get; set; }
 
-        public bool Data1Active { get; set; }
+        public bool data1_active { get; set; }
 
-        public bool Data2Active { get; set; }
+        public bool data2_active { get; set; }
 
-        public bool Data3Active { get; set; }
+        public bool data3_active { get; set; }
 
-        public bool Data4Active { get; set; }
+        public bool data4_active { get; set; }
     }
 }

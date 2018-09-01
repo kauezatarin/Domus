@@ -7,49 +7,49 @@ namespace DomusSharedClasses
     {
         public Data()
         {
-            this.DataId = -1;
-            this.DeviceId = null;
-            this.CreatedAt = null;
-            this.Data1 = null;
-            this.Data2 = null;
-            this.Data3 = null;
-            this.Data4 = null;
+            this.dataId = -1;
+            this.device_id = null;
+            this.createdAt = null;
+            this.data1 = null;
+            this.data2 = null;
+            this.data3 = null;
+            this.data4 = null;
         }
 
-        public Data(int dataId, string deviceId, string createdAt, string data1, string data2, string data3, string data4)
+        public Data(int dataId, string device_id, string createdAt, string data1, string data2, string data3, string data4)
         {
-            this.DataId = dataId;
-            this.DeviceId = deviceId;
-            this.CreatedAt = createdAt;
-            this.Data1 = data1;
-            this.Data2 = data2;
-            this.Data3 = data3;
-            this.Data4 = data4;
+            this.dataId = dataId;
+            this.device_id = device_id;
+            this.createdAt = createdAt;
+            this.data1 = data1;
+            this.data2 = data2;
+            this.data3 = data3;
+            this.data4 = data4;
         }
 
         public Data(int dataId, string deviceId)
         {
-            this.DataId = dataId;
-            this.DeviceId = deviceId;
-            this.CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            this.Data1 = null;
-            this.Data2 = null;
-            this.Data3 = null;
-            this.Data4 = null;
+            this.dataId = dataId;
+            this.device_id = deviceId;
+            this.createdAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            this.data1 = null;
+            this.data2 = null;
+            this.data3 = null;
+            this.data4 = null;
         }
 
-        public int DataId { get; set; }
+        public int dataId { get; set; }
 
-        public string DeviceId { get; set; }
+        public string device_id { get; set; }
 
-        public string CreatedAt { get; set; }
+        public string createdAt { get; set; }
 
-        public string Data1 { get; set; }
+        public string data1 { get; set; }
 
-        public string Data2 { get; set; }
+        public string data2 { get; set; }
 
-        public string Data3 { get; set; }
+        public string data3 { get; set; }
 
-        public string Data4 { get; set; }
+        public string data4 { get; set; }
     }
 }

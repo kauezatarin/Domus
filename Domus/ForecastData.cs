@@ -6,20 +6,20 @@ namespace DomusSharedClasses
 {
     public class ForecastData
     {
-        public DateTime TimeFrom { get; private set; }
+        public DateTime Time_From { get; private set; }
 
-        public DateTime TimeTo { get; private set; }
+        public DateTime Time_To { get; private set; }
 
-        public float PrecipitationValue { get; private set; }
+        public float Precipitation_Value { get; private set; }
 
-        public string PrecipitationType { get; private set; }
+        public string Precipitation_Type { get; private set; }
 
         public ForecastData(DateTime timeFrom, DateTime timeTo, float precipitationValue, string precipitationType)
         {
-            TimeFrom = timeFrom;
-            TimeTo = timeTo;
-            PrecipitationValue = precipitationValue;
-            PrecipitationType = precipitationType;
+            Time_From = timeFrom;
+            Time_To = timeTo;
+            Precipitation_Value = precipitationValue;
+            Precipitation_Type = precipitationType;
         }
     }
 }

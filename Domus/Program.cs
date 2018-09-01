@@ -251,8 +251,8 @@ namespace Domus
                 DateTime temp = schedule.ScheduleTime;
 
                 temp = temp.AddDays(DateTime.Now.Day - temp.Day);
-                temp = temp.AddDays(DateTime.Now.Month - temp.Month);
-                temp = temp.AddDays(DateTime.Now.Year - temp.Year);
+                temp = temp.AddMonths(DateTime.Now.Month - temp.Month);
+                temp = temp.AddYears(DateTime.Now.Year - temp.Year);
 
                 schedule.ScheduleTime = temp;
 

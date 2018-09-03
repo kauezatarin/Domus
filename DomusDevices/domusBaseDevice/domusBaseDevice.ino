@@ -51,7 +51,7 @@ String inData = String(100);
 String outData = String(100);
 char c;
 
-bool isDebugging = true;
+bool isDebugging = false;
 
 //sensor de humidade e temperatura
 DHT dht(DHTPIN, DHTTYPE);

@@ -30,7 +30,7 @@ byte deviceIp[4]= {
 };
 
 byte serverIp[4]= {
-  192, 168, 1, 41
+  192, 168, 1, 40
 };
 
 bool isDHCP = true;
@@ -51,7 +51,7 @@ String inData = String(100);
 String outData = String(100);
 char c;
 
-bool isDebugging = false;
+bool isDebugging = true;
 
 //sensor de humidade e temperatura
 DHT dht(DHTPIN, DHTTYPE);
@@ -246,7 +246,7 @@ void executeSerialCommand()
   int i = 0;
 
   serial.toCharArray(command,serial.length()+1);//converte os dados para um vetor de caracteres.
-
+  
   if(command[0] == '0')//caso receba o handshake
   {
     Serial.println("domus");
@@ -311,7 +311,7 @@ void executeSerialCommand()
         serverIp[i-1] = (byte)atoi(str);//converte a string para byte
       }
       else if(i == 5)
-      {
+      {        
         connectionPort = atoi(str);//converte a string para int
       }
       else if(i == 6)
@@ -327,11 +327,8 @@ void executeSerialCommand()
         mac[i-11] = (byte)atoi(str);//converte a string para byte
       }
       else if(i == 17)
-      {      
-        for(int j=0; j<34; j++)
-        {
-          DEVICE_UNIQUE_ID[j] = *(str+j);
-        }    
+      {
+        memcpy(DEVICE_UNIQUE_ID, str, sizeof(str[0])*32);
       }
   
       i++;
@@ -344,6 +341,8 @@ void executeSerialCommand()
   else if(command[0] == '3')//caso receba o comando de limpeza reseta a memoria
   {
     EEPROM_Clear();
+
+    Serial.println("ok");
   }
 }
 
@@ -353,11 +352,11 @@ void EEPROM_loadConfigs()
   for(int i =0; i < 4; i++) //carrega o ip do servidor
   {
     serverIp[i] = EEPROM.read(1+i);
-  }
-
-  isDHCP = EEPROM.read(7); //carrega se o device deverá obter seu ip através de DHCP
+  }  
 
   EEPROM_readAnything(5, connectionPort); //carrega a porta de conexão
+
+  isDHCP = EEPROM.read(7); //carrega se o device deverá obter seu ip através de DHCP
 
   for(int i =0; i < 4; i++) //carrega o ip do dispositivo caso exista alteração
   {
@@ -369,7 +368,7 @@ void EEPROM_loadConfigs()
     mac[i] = EEPROM.read(12+i);
   }
 
-  EEPROM_readAnything(18, connectionPort); //carrega o id unico do dispositivo
+  EEPROM_readAnything(18, DEVICE_UNIQUE_ID); //carrega o id unico do dispositivo
 
   SerialPrint("Configurações carregadas.",true);
 }
@@ -385,9 +384,9 @@ void EEPROM_save()
     EEPROM.update(1+i, serverIp[i]);
   }
 
-  EEPROM.update(7, isDHCP); //atualiza se o device deverá obter seu ip através de DHCP
-
   EEPROM_writeAnything(5, connectionPort); //salva a porta de conexão
+  
+  EEPROM.update(7, isDHCP); //atualiza se o device deverá obter seu ip através de DHCP  
 
   for(int i =0; i < 4; i++) //atuaiza o ip do dispositivo caso exista alteração
   {
@@ -399,27 +398,9 @@ void EEPROM_save()
     EEPROM.update(12+i, mac[i]);
   }
 
-  EEPROM_writeAnything(18, connectionPort); //salva o id unico do dispositivo
+  EEPROM_writeAnything(18, DEVICE_UNIQUE_ID); //salva o id unico do dispositivo
 
   SerialPrint("Configurações salvas.",true);
-}
-
-//carrega da memoria o id unico do dispositivo
-void EEPROM_loadUniqueId(int addres, int keySize)
-{
-  int i,j=0;
-  int fim = addres + keySize;
-  
-  for(i=addres; i<=fim; i++)
-  {
-    DEVICE_UNIQUE_ID[j] = EEPROM.read(i);
-
-    j++;
-  }
-
-  DEVICE_UNIQUE_ID[32] = '\0';
-
-  return;
 }
 
 //limpa todos os dados da EEPROM setando o valor '0'

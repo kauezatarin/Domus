@@ -14,5 +14,8 @@ sudo mkdir -p /opt/dotnet && sudo tar zxf dotnet.tar.gz -C /opt/dotnet
 echo "Criando link simbolico para dotnet"
 sudo ln -s /opt/dotnet/dotnet /usr/local/bin
 
+echo "Limpando arquivos temporarios"
+sudo rm dotnet.tar.gz
+
 echo "Instalação finalizada."
 dotnet --info

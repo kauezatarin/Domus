@@ -90,5 +90,20 @@ namespace Domus
             return temp;
         }
 
+        /// <summary>
+        /// Mapeia o datareader para um objeto CisternConfig
+        /// </summary>
+        public static CisternConfig MapCisternConfig(MySqlDataReader dataReader)
+        {
+            CisternConfig config = new CisternConfig(
+                dataReader.GetInt32("config_id"),
+                dataReader.GetInt32("time_of_rain"),
+                dataReader.GetInt32("min_water_level"),
+                dataReader.GetInt32("min_level_action")
+                );
+
+            return config;
+        }
+
     }
 }

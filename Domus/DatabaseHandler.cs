@@ -545,6 +545,36 @@ namespace Domus
             }
         }
 
+        public static CisternConfig GetCisternConfig(string connectionString)
+        {
+            CisternConfig config;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM cistern_config limit 1";
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            dataReader.Read();
+
+                            config = Maper.MapCisternConfig(dataReader);
+                        }
+
+                        return config;
+                    }
+                    catch (MySqlException e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
         /*//Count statement
         public int Count()
         {

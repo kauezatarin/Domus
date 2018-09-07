@@ -810,6 +810,7 @@ namespace Domus
             return;
         }
 
+        //Metodo que interpreta e executa os comandos recebidos do cliente
         private static void ExecuteClientAction(NetworkStream stream, string data, ConnectionCommandStore me, User user)
         {
             if (data.Contains("ListDevices"))
@@ -1143,10 +1144,34 @@ namespace Domus
                     _log.Error("Fail to sent weather to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
                 }
             }
+            else if (data.Contains("GetCisternConfig"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to get cistern configs but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    CisternConfig config = DatabaseHandler.GetCisternConfig(_connectionString);
+
+                    ClientWriteSerialized(stream, config);
+
+                    _log.Info("Sent cistern configuration to user " + user.Username + "@" + me.ClientIp);
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Fail to send cistern configurations to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                }
+            }
             else
             {
                 ClientWrite(stream, "InvalidCommand");
-                _log.Warn("User " + user.Username + "@" + me.ClientIp + " has send: " + data);
+                _log.Warn("User " + user.Username + "@" + me.ClientIp + " has sent: " + data);
             }
         }
 

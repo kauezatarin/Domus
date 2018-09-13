@@ -1139,6 +1139,11 @@ namespace Domus
 
                     _log.Info("Weather sent to user " + user.Username + "@" + me.ClientIp);
                 }
+                catch (WebException e)
+                {
+                    _log.Warn("Fail to sent weather to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                    ClientWrite(stream,"failToGetWeather");
+                }
                 catch (Exception e)
                 {
                     _log.Error("Fail to sent weather to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);

@@ -545,6 +545,9 @@ namespace Domus
             }
         }
 
+        /// <summary>
+        /// Retorna as configurações da cisterna
+        /// </summary>
         public static CisternConfig GetCisternConfig(string connectionString)
         {
             CisternConfig config;
@@ -571,6 +574,31 @@ namespace Domus
                         throw e;
                     }
 
+                }
+            }
+        }
+
+        /// <summary>
+        /// Atualiza as configurações da cisterna
+        /// </summary>
+        public static void UpdateCisternConfig(string connectionString, CisternConfig config)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "UPDATE cistern_config SET time_of_rain = " + config.TimeOfRain +
+                                      ", min_water_level = " + config.MinWaterLevel +
+                                      ", min_level_action = " + config.MinLevelAction +
+                                      " WHERE config_id='" + config.ConfigId + "'";
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
                 }
             }
         }

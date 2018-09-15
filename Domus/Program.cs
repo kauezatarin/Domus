@@ -1168,9 +1168,66 @@ namespace Domus
 
                     _log.Info("Sent cistern configuration to user " + user.Username + "@" + me.ClientIp);
                 }
+                catch (MySqlException e)
+                {
+                    _log.Warn("Could not load cistern configuration on database, trying to create a new configuration.");
+
+                    CisternConfig temp = new CisternConfig(1,10,10,0);
+
+                    if (DatabaseHandler.InsertCisternConfig(_connectionString, temp) == 0)
+                    {
+                        _log.Error("Error on insert cistern configuration.");
+                        ClientWrite(stream, "ErrorOnLoadConfig");
+                    }
+                    else
+                    {
+                        ClientWriteSerialized(stream, temp);
+
+                        _log.Info("Sent cistern configuration to user " + user.Username + "@" + me.ClientIp);
+                    }
+                }
                 catch (Exception e)
                 {
                     _log.Error("Fail to send cistern configurations to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                }
+            }
+            else if (data.Contains("SaveCisternConfig"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to update the cistern configurations but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    ClientWrite(stream, "SendConfig");
+
+                    _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an SaveCisternConfig request.");
+
+                    CisternConfig temp = (CisternConfig)ClientReadSerilized(stream, 30000);
+
+                    if (DatabaseHandler.UpdateCisternConfig(_connectionString, temp) == 0)
+                    {
+                        _log.Warn("Could not update cistern configuration on database, trying to create a new configuration.");
+
+                        if(DatabaseHandler.InsertCisternConfig(_connectionString, temp) == 0)
+                            throw new Exception("Error on insert cistern configuration.");
+                    }
+
+                    ClientWrite(stream, "ConfigSaved");
+
+                    _log.Info("The SaveCisternConfig request from " + user.Username + "@" + me.ClientIp + " was successfullycompleted");
+                }
+                catch (Exception e)
+                {
+                    //if(e.GetBaseException() != )
+                    _log.Error("Error on complete SaveCisternConfig request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToSave");
                 }
             }
             else

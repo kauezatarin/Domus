@@ -559,7 +559,7 @@ namespace Domus
                     try
                     {
                         conn.Open();
-                        cmd.CommandText = "SELECT * FROM cistern_config limit 1";
+                        cmd.CommandText = "SELECT * FROM cistern_config order by config_id desc limit 1";
                         using (MySqlDataReader dataReader = cmd.ExecuteReader())
                         {
                             dataReader.Read();
@@ -579,9 +579,35 @@ namespace Domus
         }
 
         /// <summary>
+        /// Adiciona uma nova configuração ao banco de dados
+        /// </summary>
+        public static int InsertCisternConfig(string connectionString, CisternConfig config)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "INSERT INTO cistern_config (time_of_rain, min_water_level, min_level_action) values(" + 
+                                      config.TimeOfRain + 
+                                      "," +config.MinWaterLevel +
+                                      "," + config.MinLevelAction + ")";
+
+                    return cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+
+            }
+        }
+
+        /// <summary>
         /// Atualiza as configurações da cisterna
         /// </summary>
-        public static void UpdateCisternConfig(string connectionString, CisternConfig config)
+        public static int UpdateCisternConfig(string connectionString, CisternConfig config)
         {
             using (var conn = new MySqlConnection(connectionString))
             using (var cmd = conn.CreateCommand())
@@ -594,7 +620,7 @@ namespace Domus
                                       ", min_level_action = " + config.MinLevelAction +
                                       " WHERE config_id='" + config.ConfigId + "'";
 
-                    cmd.ExecuteNonQuery();
+                    return cmd.ExecuteNonQuery();
                 }
                 catch (MySqlException e)
                 {

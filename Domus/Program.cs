@@ -1220,7 +1220,7 @@ namespace Domus
 
                     ClientWrite(stream, "ConfigSaved");
 
-                    _log.Info("The SaveCisternConfig request from " + user.Username + "@" + me.ClientIp + " was successfullycompleted");
+                    _log.Info("The SaveCisternConfig request from " + user.Username + "@" + me.ClientIp + " was successfully completed");
                 }
                 catch (Exception e)
                 {

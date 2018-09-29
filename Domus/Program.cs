@@ -104,7 +104,7 @@ namespace Domus
                         Thread.Sleep(30000);
                     }
                 }
-                
+
                 //Tenta resgatar a previsão do tempo
                 _log.Info("Acquiring forecast informations");
 
@@ -906,7 +906,7 @@ namespace Domus
 
                     ClientWrite(stream, "DeviceUpdated");
 
-                    _log.Info("The UpdateDevice request from " + user.Username + "@" + me.ClientIp + " was successfullycompleted and updated the device " + temp.DeviceName + ".");
+                    _log.Info("The UpdateDevice request from " + user.Username + "@" + me.ClientIp + " was successfully completed and updated the device " + temp.DeviceName + ".");
                 }
                 catch (Exception e)
                 {
@@ -934,7 +934,7 @@ namespace Domus
 
                     ClientWrite(stream, "DeviceDeleted");
 
-                    _log.Info("The DeleteDevice request from " + user.Username + "@" + me.ClientIp + " was successfullycompleted and deleted the userId " + data.Split(";")[1] + ".");
+                    _log.Info("The DeleteDevice request from " + user.Username + "@" + me.ClientIp + " was successfully completed and deleted the userId " + data.Split(";")[1] + ".");
                 }
                 catch (Exception e)
                 {
@@ -990,7 +990,7 @@ namespace Domus
 
                     ClientWrite(stream, "UserUpdated");
 
-                    _log.Info("The UpdateUser request from " + user.Username + "@" + me.ClientIp + " was successfullycompleted and updated the user " + temp.Username + ".");
+                    _log.Info("The UpdateUser request from " + user.Username + "@" + me.ClientIp + " was successfully completed and updated the user " + temp.Username + ".");
                 }
                 catch (Exception e)
                 {
@@ -1064,7 +1064,7 @@ namespace Domus
 
                     ClientWrite(stream, "UserDeleted");
 
-                    _log.Info("The DeleteUser request from " + user.Username + "@" + me.ClientIp + " was successfullycompleted and deleted the userId " + data.Split(";")[1] + ".");
+                    _log.Info("The DeleteUser request from " + user.Username + "@" + me.ClientIp + " was successfully completed and deleted the userId " + data.Split(";")[1] + ".");
                 }
                 catch (Exception e)
                 {
@@ -1092,7 +1092,7 @@ namespace Domus
 
                     ClientWrite(stream, "PasswdChanged");
 
-                    _log.Info("The ChangePasswd request from " + user.Username + "@" + me.ClientIp + " was successfullycompleted.");
+                    _log.Info("The ChangePasswd request from " + user.Username + "@" + me.ClientIp + " was successfully completed.");
                 }
                 catch (Exception e)
                 {
@@ -1120,7 +1120,7 @@ namespace Domus
 
                     ClientWrite(stream, "PasswdReseted");
 
-                    _log.Info("The ResetPasswd request from " + user.Username + "@" + me.ClientIp + " was successfullycompleted and reseted the passwrod for userId " + data.Split(";")[1] + ".");
+                    _log.Info("The ResetPasswd request from " + user.Username + "@" + me.ClientIp + " was successfully completed and reseted the passwrod for userId " + data.Split(";")[1] + ".");
                 }
                 catch (Exception e)
                 {
@@ -1242,7 +1242,8 @@ namespace Domus
                 }
 
                 try
-                {
+                
+{
                     List<Service> services = DatabaseHandler.GetAllServices(_connectionString);
 
                     ClientWriteSerialized(stream, services);
@@ -1252,6 +1253,40 @@ namespace Domus
                 catch (Exception e)
                 {
                     _log.Error("Fail to list all services to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                }
+            }
+            else if (data.Contains("UpdateLink"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to update a service link but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    ClientWrite(stream, "SendService");
+
+                    _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an UpdateLink request.");
+
+                    Service temp = (Service)ClientReadSerilized(stream, 30000);
+
+                    DatabaseHandler.UnlinkDevicePort(_connectionString, temp.DeviceId, temp.DevicePortNumber);
+
+                    DatabaseHandler.UpdateService(_connectionString, temp);
+
+                    ClientWrite(stream, "LinkUpdated");
+
+                    _log.Info("The UpdateLink request from " + user.Username + "@" + me.ClientIp + " was successfully completed and updated the service " + temp.ServiceName + ".");
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Error on complete UpdateLink request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToUpdate");
                 }
             }
             else

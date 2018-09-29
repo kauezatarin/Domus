@@ -1274,7 +1274,8 @@ namespace Domus
 
                     Service temp = (Service)ClientReadSerilized(stream, 30000);
 
-                    DatabaseHandler.UnlinkDevicePort(_connectionString, temp.DeviceId, temp.DevicePortNumber);
+                    if(temp.IsSensor)
+                        DatabaseHandler.UnlinkDevicePort(_connectionString, temp.DeviceId, temp.DevicePortNumber);
 
                     DatabaseHandler.UpdateService(_connectionString, temp);
 

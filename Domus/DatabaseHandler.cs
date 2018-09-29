@@ -679,7 +679,7 @@ namespace Domus
                 {
                     conn.Open();
                     cmd.CommandText = "UPDATE services SET device_id = 'NULL'" +
-                                      ", device_port_number = 0 WHERE device_id= '" + deviceId + 
+                                      ", device_port_number = -1 WHERE device_id= '" + deviceId + 
                                       "' AND device_port_number = " + devicePortNumber;
 
                     cmd.ExecuteNonQuery();

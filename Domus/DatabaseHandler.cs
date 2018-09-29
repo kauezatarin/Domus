@@ -629,6 +629,44 @@ namespace Domus
             }
         }
 
+        /// <summary>
+        /// Retorna uma lista contendo todos os serviços cadastrados
+        /// </summary>
+        public static List<Service> GetAllServices(string connectionString)
+        {
+            List<Service> services = new List<Service>();
+            Service temp;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM services";
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            while (dataReader.Read())
+                            {
+                                temp = Maper.MapService(dataReader);
+
+                                services.Add(temp);
+                            }
+                        }
+
+                        return services;
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
         /*//Count statement
         public int Count()
         {

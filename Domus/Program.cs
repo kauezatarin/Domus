@@ -1230,6 +1230,30 @@ namespace Domus
                     ClientWrite(stream, "FailToSave");
                 }
             }
+            else if (data.Contains("ListServices"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to list services but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    List<Service> services = DatabaseHandler.GetAllServices(_connectionString);
+
+                    ClientWriteSerialized(stream, services);
+
+                    _log.Info("Listed all services to user " + user.Username + "@" + me.ClientIp);
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Fail to list all services to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                }
+            }
             else
             {
                 ClientWrite(stream, "InvalidCommand");

@@ -105,5 +105,21 @@ namespace Domus
             return config;
         }
 
+        /// <summary>
+        /// Mapeia o datareader para um objeto Service
+        /// </summary>
+        public static Service MapService(MySqlDataReader dataReader)
+        {
+            Service service = new Service(
+                dataReader.GetInt32("service_id"),
+                dataReader.GetString("service_name"),
+                dataReader.GetBoolean("is_sensor"),
+                dataReader.GetString("device_id"),
+                dataReader.GetInt32("device_port_number")
+            );
+
+            return service;
+        }
+
     }
 }

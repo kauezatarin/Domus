@@ -629,6 +629,92 @@ namespace Domus
             }
         }
 
+        /// <summary>
+        /// Retorna uma lista contendo todos os serviços cadastrados
+        /// </summary>
+        public static List<Service> GetAllServices(string connectionString)
+        {
+            List<Service> services = new List<Service>();
+            Service temp;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM services";
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            while (dataReader.Read())
+                            {
+                                temp = Maper.MapService(dataReader);
+
+                                services.Add(temp);
+                            }
+                        }
+
+                        return services;
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// Remove o vinculo de uma determinada porta de dispositivo caso a mesma exista
+        /// </summary>
+        public static void UnlinkDevicePort(string connectionString, string deviceId, int devicePortNumber)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "UPDATE services SET device_id = 'NULL'" +
+                                      ", device_port_number = -1 WHERE device_id= '" + deviceId + 
+                                      "' AND device_port_number = " + devicePortNumber;
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Cria um novo vinculo de uma determinada porta de dispositivo a um serviço
+        /// </summary>
+        public static void UpdateService(string connectionString, Service temp)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "UPDATE services SET device_id = '" + temp.DeviceId +
+                                      "', device_port_number = " + temp.DevicePortNumber +
+                                      " WHERE service_id= " + temp.ServiceId;
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
         /*//Count statement
         public int Count()
         {

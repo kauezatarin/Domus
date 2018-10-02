@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Domus
+namespace DomusSharedClasses
 {
+    [Serializable]
+
     public class IrrigationSchedule
     {
         public IrrigationSchedule(int scheduleId, string scheduleName, DateTime scheduleTime, int runFor,bool sunday, bool moonday, bool tuesday, bool wednesday, bool thursday, bool friday, bool saturday, bool active)

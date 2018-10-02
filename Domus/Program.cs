@@ -1176,7 +1176,7 @@ namespace Domus
 
                     if (DatabaseHandler.InsertCisternConfig(_connectionString, temp) == 0)
                     {
-                        _log.Error("Error on insert cistern configuration.");
+                        _log.Error("Error on insert cistern configuration. - " + e.Message, e);
                         ClientWrite(stream, "ErrorOnLoadConfig");
                     }
                     else
@@ -1288,6 +1288,30 @@ namespace Domus
                     _log.Error("Error on complete UpdateLink request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToUpdate");
+                }
+            }
+            else if (data.Contains("ListIrrigationTimes"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to list the irrigation schedules but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    List<IrrigationSchedule> schedules = DatabaseHandler.GetAllIrrigationSchedules(_connectionString);
+
+                    ClientWriteSerialized(stream, schedules);
+
+                    _log.Info("Listed all irrigation schedules to user " + user.Username + "@" + me.ClientIp);
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Fail to list all irrigation schedules to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
                 }
             }
             else

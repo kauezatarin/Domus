@@ -6,7 +6,7 @@ namespace DomusSharedClasses
 {
     [Serializable]
 
-    class IrrigationConfig
+    public class IrrigationConfig
     {
         public IrrigationConfig(int configId, int maxSoilHumidity, int minAirTemperature, int maxAirTemperature, bool useForecast)
         {

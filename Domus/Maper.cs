@@ -2,6 +2,7 @@
 
 using MySql.Data.MySqlClient;
 using DomusSharedClasses;
+using System;
 
 namespace Domus
 {
@@ -121,5 +122,20 @@ namespace Domus
             return service;
         }
 
+        /// <summary>
+        /// Mapeia o datareader para um objeto IrrigationConfig
+        /// </summary>
+        public static IrrigationConfig MapIrrigationConfig(MySqlDataReader dataReader)
+        {
+            IrrigationConfig config = new IrrigationConfig(
+                dataReader.GetInt32("config_id"),
+                dataReader.GetInt32("max_soil_humidity"),
+                dataReader.GetInt32("min_air_temperature"),
+                dataReader.GetInt32("max_air_temperature"),
+                dataReader.GetBoolean("use_forecast")
+            );
+
+            return config;
+        }
     }
 }

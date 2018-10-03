@@ -1224,7 +1224,6 @@ namespace Domus
                 }
                 catch (Exception e)
                 {
-                    //if(e.GetBaseException() != )
                     _log.Error("Error on complete SaveCisternConfig request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToSave");
@@ -1290,7 +1289,7 @@ namespace Domus
                     ClientWrite(stream, "FailToUpdate");
                 }
             }
-            else if (data.Contains("ListIrrigationTimes"))
+            else if (data.Contains("ListIrrigationSchedules"))
             {
                 if (!user.IsAdmin)
                 {
@@ -1312,6 +1311,86 @@ namespace Domus
                 catch (Exception e)
                 {
                     _log.Error("Fail to list all irrigation schedules to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                }
+            }
+            else if (data.Contains("GetIrrigationConfig"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to get irrigation configs but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    IrrigationConfig config = DatabaseHandler.GetIrrigationConfig(_connectionString);
+
+                    ClientWriteSerialized(stream, config);
+
+                    _log.Info("Sent irrigation configuration to user " + user.Username + "@" + me.ClientIp);
+                }
+                catch (MySqlException e)
+                {
+                    _log.Warn("Could not load irrigation configuration on database, trying to create a new configuration.");
+
+                    IrrigationConfig temp = new IrrigationConfig(1,80, 10, 33, true);
+
+                    if (DatabaseHandler.InsertIrrigationConfig(_connectionString, temp) == 0)
+                    {
+                        _log.Error("Error on insert irrigation configuration. - " + e.Message, e);
+                        ClientWrite(stream, "ErrorOnLoadConfig");
+                    }
+                    else
+                    {
+                        ClientWriteSerialized(stream, temp);
+
+                        _log.Info("Sent irrigation configuration to user " + user.Username + "@" + me.ClientIp);
+                    }
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Fail to send irrigation configurations to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                }
+            }
+            else if (data.Contains("SaveIrrigationConfig"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to update the irrigation configurations but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    ClientWrite(stream, "SendConfig");
+
+                    _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an SaveIrrigationConfig request.");
+
+                    IrrigationConfig temp = (IrrigationConfig)ClientReadSerilized(stream, 30000);
+
+                    if (DatabaseHandler.UpdateIrrigationConfig(_connectionString, temp) == 0)
+                    {
+                        _log.Warn("Could not update irrigation configuration on database, trying to create a new configuration.");
+
+                        if (DatabaseHandler.InsertIrrigationConfig(_connectionString, temp) == 0)
+                            throw new Exception("Error on insert cistern configuration.");
+                    }
+
+                    ClientWrite(stream, "ConfigSaved");
+
+                    _log.Info("The SaveIrrigationConfig request from " + user.Username + "@" + me.ClientIp + " was successfully completed");
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Error on complete SaveIrrigationConfig request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToSave");
                 }
             }
             else

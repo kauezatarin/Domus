@@ -579,7 +579,7 @@ namespace Domus
         }
 
         /// <summary>
-        /// Adiciona uma nova configuração ao banco de dados
+        /// Adiciona uma nova configuração da cisterna ao banco de dados
         /// </summary>
         public static int InsertCisternConfig(string connectionString, CisternConfig config)
         {
@@ -707,6 +707,92 @@ namespace Domus
                                       " WHERE service_id= " + temp.ServiceId;
 
                     cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retorna as configurações da cisterna
+        /// </summary>
+        public static IrrigationConfig GetIrrigationConfig(string connectionString)
+        {
+            IrrigationConfig config;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM irrigation_config order by config_id desc limit 1";
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            dataReader.Read();
+
+                            config = Maper.MapIrrigationConfig(dataReader);
+                        }
+
+                        return config;
+                    }
+                    catch (MySqlException e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adiciona uma nova configuração da irrigação ao banco de dados
+        /// </summary>
+        public static int InsertIrrigationConfig(string connectionString, IrrigationConfig config)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "INSERT INTO cistern_config (max_soil_humidity, min_air_temperature, max_air_temperature, use_forecast) values(" +
+                                      config.MaxSoilHumidity +
+                                      "," + config.MinAirTemperature +
+                                      "," + config.MinAirTemperature + 
+                                      "," + config.UseForecast + ")";
+
+                    return cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+
+            }
+        }
+
+        /// <summary>
+        /// Atualiza as configurações da irrigação
+        /// </summary>
+        public static int UpdateIrrigationConfig(string connectionString, IrrigationConfig config)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "UPDATE irrigation_config SET max_soil_humidity = " + config.MaxSoilHumidity +
+                                      ", min_air_temperature = " + config.MinAirTemperature +
+                                      ", max_air_temperature = " + config.MaxAirTemperature +
+                                      ", use_forecast" + config.UseForecast +
+                                      " WHERE config_id='" + config.ConfigId + "'";
+
+                    return cmd.ExecuteNonQuery();
                 }
                 catch (MySqlException e)
                 {

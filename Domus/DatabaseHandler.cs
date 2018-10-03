@@ -789,10 +789,29 @@ namespace Domus
                     cmd.CommandText = "UPDATE irrigation_config SET max_soil_humidity = " + config.MaxSoilHumidity +
                                       ", min_air_temperature = " + config.MinAirTemperature +
                                       ", max_air_temperature = " + config.MaxAirTemperature +
-                                      ", use_forecast" + config.UseForecast +
-                                      " WHERE config_id='" + config.ConfigId + "'";
+                                      ", use_forecast = " + config.UseForecast +
+                                      " WHERE config_id=" + config.ConfigId;
 
                     return cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        internal static void DeleteIrrigationSchedule(string connectionString, string shceduleId)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "DELETE FROM irrigation_schedule WHERE schedule_id=" + shceduleId;
+
+                    cmd.ExecuteNonQuery();
                 }
                 catch (MySqlException e)
                 {

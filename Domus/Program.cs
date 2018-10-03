@@ -919,7 +919,7 @@ namespace Domus
             {
                 if (!user.IsAdmin)
                 {
-                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to delet an user but does not have permission.");
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to delete an user but does not have permission.");
 
                     ClientWrite(stream, "noPermission");
 
@@ -934,7 +934,7 @@ namespace Domus
 
                     ClientWrite(stream, "DeviceDeleted");
 
-                    _log.Info("The DeleteDevice request from " + user.Username + "@" + me.ClientIp + " was successfully completed and deleted the userId " + data.Split(";")[1] + ".");
+                    _log.Info("The DeleteDevice request from " + user.Username + "@" + me.ClientIp + " was successfully completed and deleted the deviceId " + data.Split(";")[1] + ".");
                 }
                 catch (Exception e)
                 {
@@ -1313,6 +1313,34 @@ namespace Domus
                     _log.Error("Fail to list all irrigation schedules to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
                 }
             }
+            else if (data.Contains("DeleteIrrigationSchedule"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to delete an irrigation schedule but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an DeleteIrrigationSchedule request.");
+
+                    DatabaseHandler.DeleteIrrigationSchedule(_connectionString, data.Split(";")[1]);
+
+                    ClientWrite(stream, "ScheduleDeleted");
+
+                    _log.Info("The DeleteIrrigationSchedule request from " + user.Username + "@" + me.ClientIp + " was successfully completed and deleted the ScheduleId " + data.Split(";")[1] + ".");
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Error on complete DeleteIrrigationSchedule request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToDelete");
+                }
+            }
             else if (data.Contains("GetIrrigationConfig"))
             {
                 if (!user.IsAdmin)
@@ -1379,7 +1407,7 @@ namespace Domus
                         _log.Warn("Could not update irrigation configuration on database, trying to create a new configuration.");
 
                         if (DatabaseHandler.InsertIrrigationConfig(_connectionString, temp) == 0)
-                            throw new Exception("Error on insert cistern configuration.");
+                            throw new Exception("Error on insert irrigation configuration.");
                     }
 
                     ClientWrite(stream, "ConfigSaved");

@@ -25,6 +25,8 @@ namespace Domus
         private static BlockingCollection<ConnectionCommandStore> _deviceConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static BlockingCollection<ConnectionCommandStore> _clientConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static ConfigHandler _config = new ConfigHandler();
+        private static IrrigationConfig _irrigationConfig;
+        private static CisternConfig _cisternConfig;
         private static string _connectionString;
         private static WeatherHandler _weather;
         private static Forecast _forecast;
@@ -105,19 +107,30 @@ namespace Domus
                     }
                 }
 
-                //Tenta resgatar a previsão do tempo
-                _log.Info("Acquiring forecast informations");
+                _log.Info("Loading systems configuration");
 
-                try
+                LoadConfigurations();
+
+                if (_irrigationConfig.UseForecast)
                 {
-                    _forecast = _weather.CheckForecast();
+                    //Tenta resgatar a previsão do tempo
+                    _log.Info("Acquiring forecast informations");
 
-                    _log.Info("Successfully acquired forecasts for " + _forecast.LocationName + "," +
-                             _forecast.LocationCountry + " (" + _forecast.LocationLatitude + ";" + _forecast.LocationLongitude + ") ");
+                    try
+                    {
+                        _forecast = _weather.CheckForecast();
+
+                        _log.Info("Successfully acquired forecasts for " + _forecast.LocationName + "," +
+                                  _forecast.LocationCountry + " (" + _forecast.LocationLatitude + ";" + _forecast.LocationLongitude + ") ");
+                    }
+                    catch (Exception e)
+                    {
+                        _log.Warn("Fail to acquire forecast informations for " + _config.CityName + "," + _config.CountryId + " ==>" + e.Message);
+                    }
                 }
-                catch (Exception e)
+                else
                 {
-                    _log.Warn("Fail to acquire forecast informations for "+ _config.CityName  + ","+ _config.CountryId + " ==>" + e.Message);
+                    _log.Warn("Forecast system is disabled. This may reduce the irrigation system turn on decision.");
                 }
 
                 try
@@ -125,7 +138,7 @@ namespace Domus
                     _log.Info("Scheduling server tasks");
 
                     DateTime temp = DateTime.Now;
-                    temp = temp.Subtract(new TimeSpan(temp.Hour, temp.Minute, temp.Second));//turns ascheduler time to 00:00:00
+                    temp = temp.Subtract(new TimeSpan(temp.Hour, temp.Minute, temp.Second));//turns a scheduler time to 00:00:00
                     temp = temp.AddDays(1);
 
                     _scheduler.ScheduleTask(temp, RefreshForecast, "Daily");
@@ -170,6 +183,67 @@ namespace Domus
             }
 
             return;
+        }
+
+        static void LoadConfigurations()
+        {
+            try
+            {
+                _irrigationConfig = DatabaseHandler.GetIrrigationConfig(_connectionString);
+
+                _log.Info("Irrigation configurations loaded.");
+            }
+            catch (MySqlException e)
+            {
+                _log.Warn("Could not load the irrigation configurations on database, trying to create new configurations.");
+
+                IrrigationConfig temp = new IrrigationConfig(1, 80, 10, 33, true);
+
+                if (DatabaseHandler.InsertIrrigationConfig(_connectionString, temp) == 0)
+                {
+                    _log.Error("Error on create the irrigation configurations. - " + e.Message, e);
+                    _log.Error("Using default configurations.");
+                    _irrigationConfig = temp;
+                }
+                else
+                {
+
+                    _log.Info("The configurations to the irrigation system were created.");
+
+                    _irrigationConfig = DatabaseHandler.GetIrrigationConfig(_connectionString);
+
+                    _log.Info("Irrigation configurations loaded.");
+                }
+            }
+
+            try
+            {
+                _cisternConfig = DatabaseHandler.GetCisternConfig(_connectionString);
+
+                _log.Info("Cistern configurations loaded.");
+            }
+            catch (MySqlException e)
+            {
+                _log.Warn("Could not load the cistern configurations on database, trying to create new configurations.");
+
+                CisternConfig temp = new CisternConfig(1, 10, 10, 0);
+
+                if (DatabaseHandler.InsertCisternConfig(_connectionString, temp) == 0)
+                {
+                    _log.Error("Error on create the cistern configurations. - " + e.Message, e);
+                    _log.Error("Using default configurations.");
+                    _cisternConfig = temp;
+                }
+                else
+                {
+
+                    _log.Info("The configurations to the cistern system were created.");
+
+                    _cisternConfig = DatabaseHandler.GetCisternConfig(_connectionString);
+
+                    _log.Info("Cistern configurations loaded.");
+                }
+            }
         }
 
         //rotina executada quando o servidor está sendo encerrado
@@ -1241,8 +1315,7 @@ namespace Domus
                 }
 
                 try
-                
-{
+                {
                     List<Service> services = DatabaseHandler.GetAllServices(_connectionString);
 
                     ClientWriteSerialized(stream, services);
@@ -1564,15 +1637,18 @@ namespace Domus
         {
             _log.Info("Updating forecast informations");
 
-            try
+            if (_irrigationConfig.UseForecast)
             {
-                _forecast = _weather.CheckForecast();
+                try
+                {
+                    _forecast = _weather.CheckForecast();
 
-                _log.Info("Successfully updated forecasts for "+ _forecast.LocationName + ","+ _forecast.LocationCountry + " ("+ _forecast.LocationLatitude + ";"+ _forecast.LocationLongitude + ") ");
-            }
-            catch (Exception e)
-            {
-                _log.Error("Fail to update forecast informations for "+ _config.CityName + ","+ _config.CountryId + " ==> " + e.Message);
+                    _log.Info("Successfully updated forecasts for " + _forecast.LocationName + "," + _forecast.LocationCountry + " (" + _forecast.LocationLatitude + ";" + _forecast.LocationLongitude + ") ");
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Fail to update forecast informations for " + _config.CityName + "," + _config.CountryId + " ==> " + e.Message);
+                }
             }
         }
 

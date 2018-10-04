@@ -8,13 +8,13 @@ namespace DomusSharedClasses
 
     public class IrrigationSchedule
     {
-        public IrrigationSchedule(int scheduleId, string scheduleName, DateTime scheduleTime, int runFor,bool sunday, bool moonday, bool tuesday, bool wednesday, bool thursday, bool friday, bool saturday, bool active)
+        public IrrigationSchedule(int scheduleId, string scheduleName, DateTime scheduleTime, int runFor,bool sunday, bool monday, bool tuesday, bool wednesday, bool thursday, bool friday, bool saturday, bool active)
         {
             this.ScheduleId = scheduleId;
             this.ScheduleName = scheduleName;
             this.ScheduleTime = scheduleTime;
             this.Sunday = sunday;
-            this.Moonday = moonday;
+            this.Monday = monday;
             this.Tuesday = tuesday;
             this.Wednesday = wednesday;
             this.Thursday = thursday;
@@ -34,7 +34,7 @@ namespace DomusSharedClasses
 
         public bool Sunday { get; set; }
 
-        public bool Moonday { get; set; }
+        public bool Monday { get; set; }
 
         public bool Tuesday { get; set; }
 

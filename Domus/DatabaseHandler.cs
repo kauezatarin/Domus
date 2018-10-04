@@ -801,7 +801,10 @@ namespace Domus
             }
         }
 
-        internal static void DeleteIrrigationSchedule(string connectionString, string shceduleId)
+        /// <summary>
+        /// Deleta um agendamento da irrigação
+        /// </summary>
+        public static void DeleteIrrigationSchedule(string connectionString, string shceduleId)
         {
             using (var conn = new MySqlConnection(connectionString))
             using (var cmd = conn.CreateCommand())
@@ -812,6 +815,72 @@ namespace Domus
                     cmd.CommandText = "DELETE FROM irrigation_schedule WHERE schedule_id=" + shceduleId;
 
                     cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adiciona um agendamento da irrigação
+        /// </summary>
+        public static int InsertIrrigationSchedule(string connectionString, IrrigationSchedule temp)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "INSERT INTO irrigation_schedule (schedule_name, schedule_time, run_for, sunday, monday, tuesday, wednesday, thursday, friday, saturday, active) values('" +
+                                      temp.ScheduleName +
+                                      "','" + temp.ScheduleTime.ToString("yyyy-MM-dd HH:mm:ss") +
+                                      "'," + temp.RunFor +
+                                      "," + temp.Sunday +
+                                      "," + temp.Monday +
+                                      "," + temp.Tuesday +
+                                      "," + temp.Wednesday +
+                                      "," + temp.Thursday +
+                                      "," + temp.Friday +
+                                      "," + temp.Saturday +
+                                      "," + temp.Active + ")";
+
+                    return cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    throw e;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Atualiza um agendamento da irrigação
+        /// </summary>
+        public static int UpdateIrrigationSchedule(string connectionString, IrrigationSchedule temp)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            using (var cmd = conn.CreateCommand())
+            {
+                try
+                {
+                    conn.Open();
+                    cmd.CommandText = "UPDATE irrigation_schedule SET schedule_name = '" + temp.ScheduleName +
+                                      "', schedule_time = '" + temp.ScheduleTime.ToString("yyyy-MM-dd HH:mm:ss") +
+                                      "', run_for = " + temp.RunFor +
+                                      ", sunday = " + temp.Sunday +
+                                      ", monday = " + temp.Monday +
+                                      ", tuesday = " + temp.Tuesday +
+                                      ", wednesday = " + temp.Wednesday +
+                                      ", thursday = " + temp.Thursday +
+                                      ", friday = " + temp.Friday +
+                                      ", saturday = " + temp.Saturday +
+                                      ", active = " + temp.Active +
+                                      " WHERE schedule_id = " + temp.ScheduleId;
+
+                    return cmd.ExecuteNonQuery();
                 }
                 catch (MySqlException e)
                 {

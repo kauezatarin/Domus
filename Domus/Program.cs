@@ -267,7 +267,7 @@ namespace Domus
                         _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
 
-                    if (schedule.Moonday)
+                    if (schedule.Monday)
                     {
                         temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Monday);
 
@@ -861,7 +861,7 @@ namespace Domus
                     ClientWrite(stream, "DeviceAdded");
 
                     _log.Info("The AddDevice request from " + user.Username + "@" + me.ClientIp +
-                             " was successfullycompleted and created the device " + temp.DeviceId + ".");
+                             " was successfully completed and created the device " + temp.DeviceId + ".");
                 }
                 catch (MySqlException e)
                 {
@@ -919,7 +919,7 @@ namespace Domus
             {
                 if (!user.IsAdmin)
                 {
-                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to delet an user but does not have permission.");
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to delete an user but does not have permission.");
 
                     ClientWrite(stream, "noPermission");
 
@@ -934,7 +934,7 @@ namespace Domus
 
                     ClientWrite(stream, "DeviceDeleted");
 
-                    _log.Info("The DeleteDevice request from " + user.Username + "@" + me.ClientIp + " was successfully completed and deleted the userId " + data.Split(";")[1] + ".");
+                    _log.Info("The DeleteDevice request from " + user.Username + "@" + me.ClientIp + " was successfully completed and deleted the deviceId " + data.Split(";")[1] + ".");
                 }
                 catch (Exception e)
                 {
@@ -1176,7 +1176,7 @@ namespace Domus
 
                     if (DatabaseHandler.InsertCisternConfig(_connectionString, temp) == 0)
                     {
-                        _log.Error("Error on insert cistern configuration.");
+                        _log.Error("Error on insert cistern configuration. - " + e.Message, e);
                         ClientWrite(stream, "ErrorOnLoadConfig");
                     }
                     else
@@ -1224,7 +1224,6 @@ namespace Domus
                 }
                 catch (Exception e)
                 {
-                    //if(e.GetBaseException() != )
                     _log.Error("Error on complete SaveCisternConfig request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToSave");
@@ -1288,6 +1287,203 @@ namespace Domus
                     _log.Error("Error on complete UpdateLink request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
 
                     ClientWrite(stream, "FailToUpdate");
+                }
+            }
+            else if (data.Contains("ListIrrigationSchedules"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to list the irrigation schedules but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    List<IrrigationSchedule> schedules = DatabaseHandler.GetAllIrrigationSchedules(_connectionString);
+
+                    ClientWriteSerialized(stream, schedules);
+
+                    _log.Info("Listed all irrigation schedules to user " + user.Username + "@" + me.ClientIp);
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Fail to list all irrigation schedules to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                }
+            }
+            else if (data.Contains("AddIrrigationSchedule"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to schedule an irrigation but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    ClientWrite(stream, "sendNewSchedule");
+
+                    _log.Info("Client " + user.Username + "@" + me.ClientIp + " has sent an AddIrrigationSchedule request.");
+
+                    IrrigationSchedule temp = (IrrigationSchedule)ClientReadSerilized(stream, 30000);
+
+                    DatabaseHandler.InsertIrrigationSchedule(_connectionString, temp);
+
+                    ClientWrite(stream, "ScheduleAdded");
+
+                    _log.Info("The AddIrrigationSchedule request from " + user.Username + "@" + me.ClientIp +
+                              " was successfully completed and scheduled the irrigation to " + temp.ScheduleTime.ToString("HH:mm:ss") + ".");
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Error on complete AddIrrigationSchedule request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToAdd");
+                }
+            }
+            else if (data.Contains("UpdateIrrigationSchedule"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to update an irrigation schedule but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    ClientWrite(stream, "SendSchedule");
+
+                    _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an UpdateIrrigationSchedule request.");
+
+                    IrrigationSchedule temp = (IrrigationSchedule)ClientReadSerilized(stream, 30000);
+
+                    DatabaseHandler.UpdateIrrigationSchedule(_connectionString, temp);
+
+                    ClientWrite(stream, "ScheduleUpdated");
+
+                    _log.Info("The UpdateIrrigationSchedule request from " + user.Username + "@" + me.ClientIp + " was successfully completed and updated the schedule " + temp.ScheduleName + ".");
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Error on complete UpdateIrrigationSchedule request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToUpdate");
+                }
+            }
+            else if (data.Contains("DeleteIrrigationSchedule"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to delete an irrigation schedule but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an DeleteIrrigationSchedule request.");
+
+                    DatabaseHandler.DeleteIrrigationSchedule(_connectionString, data.Split(";")[1]);
+
+                    ClientWrite(stream, "ScheduleDeleted");
+
+                    _log.Info("The DeleteIrrigationSchedule request from " + user.Username + "@" + me.ClientIp + " was successfully completed and deleted the ScheduleId " + data.Split(";")[1] + ".");
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Error on complete DeleteIrrigationSchedule request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToDelete");
+                }
+            }
+            else if (data.Contains("GetIrrigationConfig"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to get irrigation configs but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    IrrigationConfig config = DatabaseHandler.GetIrrigationConfig(_connectionString);
+
+                    ClientWriteSerialized(stream, config);
+
+                    _log.Info("Sent irrigation configuration to user " + user.Username + "@" + me.ClientIp);
+                }
+                catch (MySqlException e)
+                {
+                    _log.Warn("Could not load irrigation configuration on database, trying to create a new configuration.");
+
+                    IrrigationConfig temp = new IrrigationConfig(1,80, 10, 33, true);
+
+                    if (DatabaseHandler.InsertIrrigationConfig(_connectionString, temp) == 0)
+                    {
+                        _log.Error("Error on insert irrigation configuration. - " + e.Message, e);
+                        ClientWrite(stream, "ErrorOnLoadConfig");
+                    }
+                    else
+                    {
+                        ClientWriteSerialized(stream, temp);
+
+                        _log.Info("Sent irrigation configuration to user " + user.Username + "@" + me.ClientIp);
+                    }
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Fail to send irrigation configurations to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                }
+            }
+            else if (data.Contains("SaveIrrigationConfig"))
+            {
+                if (!user.IsAdmin)
+                {
+                    _log.Warn(user.Username + "@" + me.ClientIp + "is trying to update the irrigation configurations but does not have permission.");
+
+                    ClientWrite(stream, "noPermission");
+
+                    return;
+                }
+
+                try
+                {
+                    ClientWrite(stream, "SendConfig");
+
+                    _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an SaveIrrigationConfig request.");
+
+                    IrrigationConfig temp = (IrrigationConfig)ClientReadSerilized(stream, 30000);
+
+                    if (DatabaseHandler.UpdateIrrigationConfig(_connectionString, temp) == 0)
+                    {
+                        _log.Warn("Could not update irrigation configuration on database, trying to create a new configuration.");
+
+                        if (DatabaseHandler.InsertIrrigationConfig(_connectionString, temp) == 0)
+                            throw new Exception("Error on insert irrigation configuration.");
+                    }
+
+                    ClientWrite(stream, "ConfigSaved");
+
+                    _log.Info("The SaveIrrigationConfig request from " + user.Username + "@" + me.ClientIp + " was successfully completed");
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Error on complete SaveIrrigationConfig request from client " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+
+                    ClientWrite(stream, "FailToSave");
                 }
             }
             else

@@ -207,7 +207,6 @@ namespace Domus
                 }
                 else
                 {
-
                     _log.Info("The configurations to the irrigation system were created.");
 
                     _irrigationConfig = DatabaseHandler.GetIrrigationConfig(_connectionString);
@@ -1292,6 +1291,8 @@ namespace Domus
                             throw new Exception("Error on insert cistern configuration.");
                     }
 
+                    _cisternConfig = DatabaseHandler.GetCisternConfig(_connectionString);
+
                     ClientWrite(stream, "ConfigSaved");
 
                     _log.Info("The SaveCisternConfig request from " + user.Username + "@" + me.ClientIp + " was successfully completed");
@@ -1547,6 +1548,8 @@ namespace Domus
                         if (DatabaseHandler.InsertIrrigationConfig(_connectionString, temp) == 0)
                             throw new Exception("Error on insert irrigation configuration.");
                     }
+
+                    _irrigationConfig = DatabaseHandler.GetIrrigationConfig(_connectionString);
 
                     ClientWrite(stream, "ConfigSaved");
 

@@ -24,6 +24,7 @@ namespace Domus
         private static bool _desligar = false;//kill switch utilizado para desligar o servidor
         private static BlockingCollection<ConnectionCommandStore> _deviceConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static BlockingCollection<ConnectionCommandStore> _clientConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
+        private static BlockingCollection<Service> _services = new BlockingCollection<Service>(new ConcurrentQueue<Service>());
         private static ConfigHandler _config = new ConfigHandler();
         private static IrrigationConfig _irrigationConfig;
         private static CisternConfig _cisternConfig;
@@ -41,7 +42,7 @@ namespace Domus
         {
             Thread connectionCleaner = null;
 
-            AppDomain.CurrentDomain.ProcessExit += OnSystemshutdown;
+            AppDomain.CurrentDomain.ProcessExit += OnSystemShutdown;
             
             Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
@@ -185,6 +186,7 @@ namespace Domus
             return;
         }
 
+        //metodo que carrega as configurações dos sistemas na inicialização
         static void LoadConfigurations()
         {
             try
@@ -243,6 +245,24 @@ namespace Domus
                     _log.Info("Cistern configurations loaded.");
                 }
             }
+
+            try
+            {
+                List<Service> services = DatabaseHandler.GetAllServices(_connectionString);
+
+                foreach (Service service in services)
+                {
+                    _services.Add(service);
+
+                    _log.Info("The link to the service " + service.ServiceName + " was loaded.");
+                }
+
+                _log.Info("Services links loaded.");
+            }
+            catch (MySqlException e)
+            {
+                _log.Fatal("Services links could not be loaded." + e.Message, e);
+            }
         }
 
         //rotina executada quando o servidor está sendo encerrado
@@ -288,7 +308,7 @@ namespace Domus
         }
 
         //metodo chamado quando o servidor recebe um SIGterm
-        private static void OnSystemshutdown(object sender, EventArgs e)
+        private static void OnSystemShutdown(object sender, EventArgs e)
         {
                 StopRoutine();   
         }
@@ -1204,23 +1224,32 @@ namespace Domus
             }
             else if (data.Contains("GetWeather"))
             {
-                try
+                if (_irrigationConfig.UseForecast)
                 {
-                    WeatherData weather = _weather.CheckWeather();
+                    try
+                    {
+                        WeatherData weather = _weather.CheckWeather();
 
-                    ClientWriteSerialized(stream, weather);
+                        ClientWriteSerialized(stream, weather);
 
-                    _log.Info("Weather sent to user " + user.Username + "@" + me.ClientIp);
+                        _log.Info("Weather sent to user " + user.Username + "@" + me.ClientIp);
+                    }
+                    catch (WebException e)
+                    {
+                        _log.Warn("Fail to sent weather to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                        ClientWrite(stream, "failToGetWeather");
+                    }
+                    catch (Exception e)
+                    {
+                        _log.Error("Fail to sent weather to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                    }
                 }
-                catch (WebException e)
+                else
                 {
-                    _log.Warn("Fail to sent weather to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
-                    ClientWrite(stream,"failToGetWeather");
+                    _log.Warn("Weather is disabled, fail to send data to " + user.Username + "@" + me.ClientIp);
+                    ClientWrite(stream, "failToGetWeather");
                 }
-                catch (Exception e)
-                {
-                    _log.Error("Fail to sent weather to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
-                }
+                
             }
             else if (data.Contains("GetCisternConfig"))
             {

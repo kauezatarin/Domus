@@ -37,6 +37,8 @@ namespace Domus
         private static TcpListener _clientServer = null;
         private static Thread _deviceListener = null;
         private static Thread _clientListener = null;
+        private static Thread _decisionMaker = null;
+        private static bool _canRunIrrigation = false;
 
         static void Main(string[] args)
         {
@@ -45,7 +47,7 @@ namespace Domus
             AppDomain.CurrentDomain.ProcessExit += OnSystemShutdown;
             
             Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
-            Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(ConsoleCancelKeyPress);
 
             _connectionString = DatabaseHandler.CreateConnectionString(_config.DatabaseIp, _config.DatabasePort, _config.DatabaseName, _config.DatabaseUser, _config.DatabasePassword);
             _weather = new WeatherHandler(_config.CityName, _config.CountryId, _config.WeatherApiKey);// adicionar os parametros na configuração
@@ -427,12 +429,21 @@ namespace Domus
         }
 
         //função que aguarda o comando de encerramento do servidor
-        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        private static void ConsoleCancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             if (e.SpecialKey == ConsoleSpecialKey.ControlC)
             {
                 _desligar = true;
                 e.Cancel = true;
+            }
+        }
+
+        //função de tomada de decisões
+        private static void DecisionMakerThread()
+        {
+            while (_desligar == false)
+            {
+                
             }
         }
 

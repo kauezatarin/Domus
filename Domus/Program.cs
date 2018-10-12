@@ -516,9 +516,7 @@ namespace Domus
                             if (tempData != null)
                             {
                                 //se a humidade do solo estiver muito alta não liga a irrigação
-                                if (Convert.ToInt32(Data.GetData(tempData,
-                                        "Data" + (tempService.DevicePortNumber + 1).ToString("0"))) >=
-                                    _irrigationConfig.MaxSoilHumidity)
+                                if (Convert.ToDouble(Data.GetData(tempData,"Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) >= _irrigationConfig.MaxSoilHumidity)
                                 {
                                     canRunIrrigation = false;
                                 }
@@ -541,16 +539,12 @@ namespace Domus
                             if (tempData != null)
                             {
                                 //se a temperatura do àr estiver muito alta não liga a irrigação
-                                if (Convert.ToInt32(Data.GetData(tempData,
-                                        "Data" + (tempService.DevicePortNumber + 1).ToString("0"))) >=
-                                    _irrigationConfig.MaxAirTemperature)
+                                if (Convert.ToDouble(Data.GetData(tempData,"Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) >=_irrigationConfig.MaxAirTemperature)
                                 {
                                     canRunIrrigation = false;
                                 }
                                 //se a temperatura do àr estiver muito baixa não liga a irrigação
-                                else if (Convert.ToInt32(Data.GetData(tempData,
-                                             "Data" + (tempService.DevicePortNumber + 1).ToString("0"))) <=
-                                         _irrigationConfig.MinAirTemperature)
+                                else if (Convert.ToDouble(Data.GetData(tempData,"Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) <=_irrigationConfig.MinAirTemperature)
                                 {
                                     canRunIrrigation = false;
                                 }

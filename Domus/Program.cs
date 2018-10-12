@@ -38,7 +38,7 @@ namespace Domus
         private static Thread _deviceListener = null;
         private static Thread _clientListener = null;
         private static Thread _decisionMaker = null;
-        private static bool _canRunIrrigation = false;
+        private static bool _canRunIrrigation = true;
 
         static void Main(string[] args)
         {
@@ -161,6 +161,13 @@ namespace Domus
                 connectionCleaner.IsBackground = true;
                 connectionCleaner.Name = "Connection Cleaner";
                 connectionCleaner.Start();
+
+                _log.Info("Starting decision maker thread");
+                _decisionMaker = new Thread(() => DecisionMakerThread());
+                _decisionMaker.IsBackground = true;
+                _decisionMaker.Name = "Decision Maker";
+                _decisionMaker.Start();
+                _log.Info("Decision maker thread started");
 
                 // starts the listening loop. 
                 _log.Info("Starting device listener on port " + _config.DeviceListeningPort);
@@ -441,9 +448,142 @@ namespace Domus
         //função de tomada de decisões
         private static void DecisionMakerThread()
         {
+            bool canRunIrrigation = true;
+            Data tempData;
+            Service tempService;
+            bool forecastNoRain = true;
+
             while (_desligar == false)
             {
-                
+                try
+                {
+                    canRunIrrigation = true;
+                    forecastNoRain = true;
+
+                    //valida a previsão do tempo
+                    if (_irrigationConfig.UseForecast && _forecast != null)
+                    {
+                        List<ForecastData> forecastDatas = _forecast.Forecasts;
+
+                        for (int i = 0; i < 24; i++)
+                        {
+                            if (forecastDatas[i].PrecipitationType != "none")
+                            {
+                                canRunIrrigation = false;
+                                forecastNoRain = false;
+                            }
+                        }
+                    }
+
+                    //descobre o dispositivo onde o sensor de chuva está atrelado
+                    tempService = _services.FirstOrDefault(Service => Service.ServiceName == "cistern.RainSensor");
+                    if (tempService.DeviceId.ToLower() != "null")
+                    {
+                        try
+                        {
+                            tempData = DatabaseHandler.GetLastRainData(_connectionString, tempService.DeviceId, "data" + (tempService.DevicePortNumber + 1).ToString("0"));
+
+                            //caso seja encontrado um registro de chuva
+                            if (tempData != null)
+                            {
+                                //se estiver chovendo não liga a irrigação
+                                if (Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")) == 1.ToString())
+                                {
+                                    canRunIrrigation = false;
+                                }
+
+                                //se a ultima chuva registrada for a mais de 7 dias e a previsão do tempo não registrar chuva, ignora as demais vaiáveis e liga a irrigação.
+                                else if ((DateTime.Now - tempData.CreatedAt).TotalDays > 7 && forecastNoRain)
+                                {
+                                    canRunIrrigation = true;
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _log.Error("Error on compute rain sensor data to decision. " + e.Message, e);
+                        }
+                    }
+
+                    //descobre o dispositivo onde o sensor de humidade do solo está conectado
+                    tempService = _services.FirstOrDefault(Service => Service.ServiceName == "irrigation.SoilHumidity");
+                    if (tempService.DeviceId.ToLower() != "null")
+                    {
+                        try
+                        {
+                            tempData = DatabaseHandler.GetLastData(_connectionString, tempService.DeviceId);
+
+                            if (tempData != null)
+                            {
+                                //se a humidade do solo estiver muito alta não liga a irrigação
+                                if (Convert.ToInt32(Data.GetData(tempData,
+                                        "Data" + (tempService.DevicePortNumber + 1).ToString("0"))) >=
+                                    _irrigationConfig.MaxSoilHumidity)
+                                {
+                                    canRunIrrigation = false;
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _log.Error("Error on compute soil humidity data to decision. " + e.Message, e);
+                        }
+                    }
+
+                    //descobre o dispositivo onde o sensor de temperatura está conectado
+                    tempService = _services.FirstOrDefault(Service => Service.ServiceName == "irrigation.Temperature");
+                    if (tempService.DeviceId.ToLower() != "null")
+                    {
+                        try
+                        {
+                            tempData = DatabaseHandler.GetLastData(_connectionString, tempService.DeviceId);
+
+                            if (tempData != null)
+                            {
+                                //se a temperatura do àr estiver muito alta não liga a irrigação
+                                if (Convert.ToInt32(Data.GetData(tempData,
+                                        "Data" + (tempService.DevicePortNumber + 1).ToString("0"))) >=
+                                    _irrigationConfig.MaxAirTemperature)
+                                {
+                                    canRunIrrigation = false;
+                                }
+                                //se a temperatura do àr estiver muito baixa não liga a irrigação
+                                else if (Convert.ToInt32(Data.GetData(tempData,
+                                             "Data" + (tempService.DevicePortNumber + 1).ToString("0"))) <=
+                                         _irrigationConfig.MinAirTemperature)
+                                {
+                                    canRunIrrigation = false;
+                                }
+                            }
+                        }
+                        catch(Exception e)
+                        {
+                            _log.Error("Error on compute temperature data to decision. " + e.Message, e);
+                        }
+                    }
+
+                    //se alterar o valor do gatilho
+                    if (_canRunIrrigation != canRunIrrigation)
+                    {
+                        _canRunIrrigation = canRunIrrigation;
+
+                        if (canRunIrrigation)
+                        {
+                            _log.Info("The environment conditions are perfect to tur on the irrigation system. Enabling it...");
+                        }
+                        else
+                        {
+                            _log.Info("The environment conditions aren't perfect to tur on the irrigation system. Disabling it...");
+                        }
+
+                    }
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Error on make decisions. " + e.Message, e);
+                }
+
+                Thread.Sleep(10000);
             }
         }
 
@@ -1698,11 +1838,18 @@ namespace Domus
         //Função que liga a irrigação
         static async Task TurnOnIrrigation(int time)
         {
-            _log.Info("Irrigation turned on.");
+            if (_canRunIrrigation)
+            {
+                _log.Info("Irrigation turned on.");
 
-            Thread.Sleep(time * 1000);
+                Thread.Sleep(time * 1000);
 
-            _log.Info("Irrigation turned off.");
+                _log.Info("Irrigation turned off.");
+            }
+            else
+            {
+                _log.Info("The weather does not seem to be perfect for irrigation. Skipping this schedule.");
+            }
         }
 
         //Garbage colector que limpa a lista de clientes e devices conectados

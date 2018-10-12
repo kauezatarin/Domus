@@ -9,14 +9,14 @@ namespace DomusSharedClasses
         {
             this.DataId = -1;
             this.DeviceId = null;
-            this.CreatedAt = null;
+            this.CreatedAt = DateTime.Now;
             this.Data1 = null;
             this.Data2 = null;
             this.Data3 = null;
             this.Data4 = null;
         }
 
-        public Data(int dataId, string deviceId, string createdAt, string data1, string data2, string data3, string data4)
+        public Data(int dataId, string deviceId, DateTime createdAt, string data1, string data2, string data3, string data4)
         {
             this.DataId = dataId;
             this.DeviceId = deviceId;
@@ -31,7 +31,7 @@ namespace DomusSharedClasses
         {
             this.DataId = dataId;
             this.DeviceId = deviceId;
-            this.CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            this.CreatedAt = DateTime.Now;
             this.Data1 = null;
             this.Data2 = null;
             this.Data3 = null;
@@ -42,7 +42,7 @@ namespace DomusSharedClasses
 
         public string DeviceId { get; set; }
 
-        public string CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
 
         public string Data1 { get; set; }
 
@@ -51,5 +51,13 @@ namespace DomusSharedClasses
         public string Data3 { get; set; }
 
         public string Data4 { get; set; }
+
+        public static string GetData(Data data, string fieldName)
+        {
+            var prop = typeof(Data).GetProperty(fieldName);
+            string value = (string)prop.GetValue(data, null);
+
+            return value;
+        }
     }
 }

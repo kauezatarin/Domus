@@ -34,9 +34,9 @@ namespace Domus
         public static Data MapData(MySqlDataReader dataReader)
         {
             Data temp = new Data(
-                dataReader.GetInt32("dataId"),
+                dataReader.GetInt32("data_id"),
                 dataReader.GetString("device_id"),
-                dataReader.GetString("createdAt"),
+                dataReader.GetDateTime("created_at"),
                 dataReader.GetString("data1"),
                 dataReader.GetString("data2"),
                 dataReader.GetString("data3"),

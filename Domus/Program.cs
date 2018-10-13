@@ -460,7 +460,7 @@ namespace Domus
                 {
                     canRunIrrigation = true;
 
-                    //valida a previsão do tempo
+                    //valida a previsão do tempo a cada 24h
                     if (_irrigationConfig.UseForecast && _forecast != null && (DateTime.Now - lastForecastAnalyzedTime).TotalDays >= 1)
                     {
                         List<ForecastData> forecastDatas = _forecast.Forecasts;
@@ -474,6 +474,15 @@ namespace Domus
                                 forecastNoRain = false;
                             }
                         }
+                    }
+                    //caso ainda não tenha dado 24h apenas replica a ultima decisão
+                    else
+                    {
+                        if (forecastNoRain == false)
+                        {
+                            canRunIrrigation = false;
+                        }
+
                     }
 
                     //descobre o dispositivo onde o sensor de chuva está atrelado

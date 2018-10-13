@@ -452,18 +452,19 @@ namespace Domus
             Data tempData;
             Service tempService;
             bool forecastNoRain = true;
+            DateTime lastForecastAnalyzedTime = DateTime.Now.AddDays(-1);
 
             while (_desligar == false)
             {
                 try
                 {
                     canRunIrrigation = true;
-                    forecastNoRain = true;
 
                     //valida a previsão do tempo
-                    if (_irrigationConfig.UseForecast && _forecast != null)
+                    if (_irrigationConfig.UseForecast && _forecast != null && (DateTime.Now - lastForecastAnalyzedTime).TotalDays >= 1)
                     {
                         List<ForecastData> forecastDatas = _forecast.Forecasts;
+                        lastForecastAnalyzedTime = DateTime.Today.AddMinutes(5);
 
                         for (int i = 0; i < 24; i++)
                         {

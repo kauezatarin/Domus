@@ -322,7 +322,7 @@ namespace Domus
                 {
                     conn.Open();
                     cmd.CommandText = "INSERT INTO data (device_id,created_at,data1,data2,data3,data4) values('" + data.DeviceId +
-                                      "','" + data.CreatedAt +
+                                      "','" + data.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") +
                                       "','" + data.Data1 +
                                       "','" + data.Data2 +
                                       "','" + data.Data3 +
@@ -885,6 +885,76 @@ namespace Domus
                 catch (MySqlException e)
                 {
                     throw e;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retorna o ultimo registro de um dado dispositivo
+        /// </summary>
+        public static Data GetLastData(string connectionString, string deviceId)
+        {
+            Data data = null;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM data WHERE device_id='" + deviceId +"'";
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            while (dataReader.Read())
+                            {
+                                data = Maper.MapData(dataReader);
+                            }
+                        }
+
+                        return data;
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retorna o ultimo registro de chuva
+        /// </summary>
+        internal static Data GetLastRainData(string connectionString, string deviceId, string dataField)
+        {
+            Data data = null;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT * FROM data WHERE device_id='" + deviceId + "' AND " + dataField + "= '1'";
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            while (dataReader.Read())
+                            {
+                                data = Maper.MapData(dataReader);
+                            }
+                        }
+
+                        return data;
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
+
                 }
             }
         }

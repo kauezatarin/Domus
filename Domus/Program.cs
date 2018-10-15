@@ -24,7 +24,10 @@ namespace Domus
         private static bool _desligar = false;//kill switch utilizado para desligar o servidor
         private static BlockingCollection<ConnectionCommandStore> _deviceConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static BlockingCollection<ConnectionCommandStore> _clientConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
+        private static BlockingCollection<Service> _services = new BlockingCollection<Service>(new ConcurrentQueue<Service>());
         private static ConfigHandler _config = new ConfigHandler();
+        private static IrrigationConfig _irrigationConfig;
+        private static CisternConfig _cisternConfig;
         private static string _connectionString;
         private static WeatherHandler _weather;
         private static Forecast _forecast;
@@ -34,15 +37,17 @@ namespace Domus
         private static TcpListener _clientServer = null;
         private static Thread _deviceListener = null;
         private static Thread _clientListener = null;
+        private static Thread _decisionMaker = null;
+        private static bool _canRunIrrigation = true;
 
         static void Main(string[] args)
         {
             Thread connectionCleaner = null;
 
-            AppDomain.CurrentDomain.ProcessExit += OnSystemshutdown;
+            AppDomain.CurrentDomain.ProcessExit += OnSystemShutdown;
             
             Console.Title = "Domus - " + Assembly.GetExecutingAssembly().GetName().Version;
-            Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(ConsoleCancelKeyPress);
 
             _connectionString = DatabaseHandler.CreateConnectionString(_config.DatabaseIp, _config.DatabasePort, _config.DatabaseName, _config.DatabaseUser, _config.DatabasePassword);
             _weather = new WeatherHandler(_config.CityName, _config.CountryId, _config.WeatherApiKey);// adicionar os parametros na configuração
@@ -105,19 +110,30 @@ namespace Domus
                     }
                 }
 
-                //Tenta resgatar a previsão do tempo
-                _log.Info("Acquiring forecast informations");
+                _log.Info("Loading systems configuration");
 
-                try
+                LoadConfigurations();
+
+                if (_irrigationConfig.UseForecast)
                 {
-                    _forecast = _weather.CheckForecast();
+                    //Tenta resgatar a previsão do tempo
+                    _log.Info("Acquiring forecast informations");
 
-                    _log.Info("Successfully acquired forecasts for " + _forecast.LocationName + "," +
-                             _forecast.LocationCountry + " (" + _forecast.LocationLatitude + ";" + _forecast.LocationLongitude + ") ");
+                    try
+                    {
+                        _forecast = _weather.CheckForecast();
+
+                        _log.Info("Successfully acquired forecasts for " + _forecast.LocationName + "," +
+                                  _forecast.LocationCountry + " (" + _forecast.LocationLatitude + ";" + _forecast.LocationLongitude + ") ");
+                    }
+                    catch (Exception e)
+                    {
+                        _log.Warn("Fail to acquire forecast informations for " + _config.CityName + "," + _config.CountryId + " ==>" + e.Message);
+                    }
                 }
-                catch (Exception e)
+                else
                 {
-                    _log.Warn("Fail to acquire forecast informations for "+ _config.CityName  + ","+ _config.CountryId + " ==>" + e.Message);
+                    _log.Warn("Forecast system is disabled. This may reduce the irrigation system turn on decision.");
                 }
 
                 try
@@ -125,7 +141,7 @@ namespace Domus
                     _log.Info("Scheduling server tasks");
 
                     DateTime temp = DateTime.Now;
-                    temp = temp.Subtract(new TimeSpan(temp.Hour, temp.Minute, temp.Second));//turns ascheduler time to 00:00:00
+                    temp = temp.Subtract(new TimeSpan(temp.Hour, temp.Minute, temp.Second));//turns a scheduler time to 00:00:00
                     temp = temp.AddDays(1);
 
                     _scheduler.ScheduleTask(temp, RefreshForecast, "Daily");
@@ -145,6 +161,13 @@ namespace Domus
                 connectionCleaner.IsBackground = true;
                 connectionCleaner.Name = "Connection Cleaner";
                 connectionCleaner.Start();
+
+                _log.Info("Starting decision maker thread");
+                _decisionMaker = new Thread(() => DecisionMakerThread());
+                _decisionMaker.IsBackground = true;
+                _decisionMaker.Name = "Decision Maker";
+                _decisionMaker.Start();
+                _log.Info("Decision maker thread started");
 
                 // starts the listening loop. 
                 _log.Info("Starting device listener on port " + _config.DeviceListeningPort);
@@ -170,6 +193,85 @@ namespace Domus
             }
 
             return;
+        }
+
+        //metodo que carrega as configurações dos sistemas na inicialização
+        static void LoadConfigurations()
+        {
+            try
+            {
+                _irrigationConfig = DatabaseHandler.GetIrrigationConfig(_connectionString);
+
+                _log.Info("Irrigation configurations loaded.");
+            }
+            catch (MySqlException e)
+            {
+                _log.Warn("Could not load the irrigation configurations on database, trying to create new configurations.");
+
+                IrrigationConfig temp = new IrrigationConfig(1, 80, 10, 33, true);
+
+                if (DatabaseHandler.InsertIrrigationConfig(_connectionString, temp) == 0)
+                {
+                    _log.Error("Error on create the irrigation configurations. - " + e.Message, e);
+                    _log.Error("Using default configurations.");
+                    _irrigationConfig = temp;
+                }
+                else
+                {
+                    _log.Info("The configurations to the irrigation system were created.");
+
+                    _irrigationConfig = DatabaseHandler.GetIrrigationConfig(_connectionString);
+
+                    _log.Info("Irrigation configurations loaded.");
+                }
+            }
+
+            try
+            {
+                _cisternConfig = DatabaseHandler.GetCisternConfig(_connectionString);
+
+                _log.Info("Cistern configurations loaded.");
+            }
+            catch (MySqlException e)
+            {
+                _log.Warn("Could not load the cistern configurations on database, trying to create new configurations.");
+
+                CisternConfig temp = new CisternConfig(1, 10, 10, 0);
+
+                if (DatabaseHandler.InsertCisternConfig(_connectionString, temp) == 0)
+                {
+                    _log.Error("Error on create the cistern configurations. - " + e.Message, e);
+                    _log.Error("Using default configurations.");
+                    _cisternConfig = temp;
+                }
+                else
+                {
+
+                    _log.Info("The configurations to the cistern system were created.");
+
+                    _cisternConfig = DatabaseHandler.GetCisternConfig(_connectionString);
+
+                    _log.Info("Cistern configurations loaded.");
+                }
+            }
+
+            try
+            {
+                List<Service> services = DatabaseHandler.GetAllServices(_connectionString);
+
+                foreach (Service service in services)
+                {
+                    _services.Add(service);
+
+                    _log.Info("The link to the service " + service.ServiceName + " was loaded.");
+                }
+
+                _log.Info("Services links loaded.");
+            }
+            catch (MySqlException e)
+            {
+                _log.Fatal("Services links could not be loaded." + e.Message, e);
+            }
         }
 
         //rotina executada quando o servidor está sendo encerrado
@@ -215,7 +317,7 @@ namespace Domus
         }
 
         //metodo chamado quando o servidor recebe um SIGterm
-        private static void OnSystemshutdown(object sender, EventArgs e)
+        private static void OnSystemShutdown(object sender, EventArgs e)
         {
                 StopRoutine();   
         }
@@ -334,12 +436,161 @@ namespace Domus
         }
 
         //função que aguarda o comando de encerramento do servidor
-        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        private static void ConsoleCancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             if (e.SpecialKey == ConsoleSpecialKey.ControlC)
             {
                 _desligar = true;
                 e.Cancel = true;
+            }
+        }
+
+        //função de tomada de decisões
+        private static void DecisionMakerThread()
+        {
+            bool canRunIrrigation = true;
+            Data tempData;
+            Service tempService;
+            bool forecastNoRain = true;
+            DateTime lastForecastAnalyzedTime = DateTime.Now.AddDays(-1);
+            int tickRate = _config.MinDataDelay * 100;
+
+            while (_desligar == false)
+            {
+                try
+                {
+                    canRunIrrigation = true;
+
+                    //valida a previsão do tempo a cada 24h
+                    if (_irrigationConfig.UseForecast && _forecast != null && (DateTime.Now - lastForecastAnalyzedTime).TotalDays >= 1)
+                    {
+                        List<ForecastData> forecastDatas = _forecast.Forecasts;
+                        lastForecastAnalyzedTime = DateTime.Today.AddMinutes(5);
+
+                        for (int i = 0; i < 24; i++)
+                        {
+                            if (forecastDatas[i].PrecipitationType != "none")
+                            {
+                                canRunIrrigation = false;
+                                forecastNoRain = false;
+
+                                break;
+                            }
+                        }
+                    }
+                    //caso ainda não tenha dado 24h apenas replica a ultima decisão
+                    else
+                    {
+                        if (forecastNoRain == false)
+                        {
+                            canRunIrrigation = false;
+                        }
+
+                    }
+
+                    //descobre o dispositivo onde o sensor de chuva está atrelado
+                    tempService = _services.FirstOrDefault(Service => Service.ServiceName == "cistern.RainSensor");
+                    if (tempService.DeviceId.ToLower() != "null")
+                    {
+                        try
+                        {
+                            tempData = DatabaseHandler.GetLastRainData(_connectionString, tempService.DeviceId, "data" + (tempService.DevicePortNumber + 1).ToString("0"));
+
+                            //caso seja encontrado um registro de chuva
+                            if (tempData != null)
+                            {
+                                //se estiver chovendo não liga a irrigação
+                                if (Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")) == 1.ToString())
+                                {
+                                    canRunIrrigation = false;
+                                }
+
+                                //se a ultima chuva registrada for a mais de 7 dias e a previsão do tempo não registrar chuva, ignora as demais vaiáveis e liga a irrigação.
+                                else if ((DateTime.Now - tempData.CreatedAt).TotalDays > 7 && forecastNoRain)
+                                {
+                                    canRunIrrigation = true;
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _log.Error("Error on compute rain sensor data to decision. " + e.Message, e);
+                        }
+                    }
+
+                    //descobre o dispositivo onde o sensor de humidade do solo está conectado
+                    tempService = _services.FirstOrDefault(Service => Service.ServiceName == "irrigation.SoilHumidity");
+                    if (tempService.DeviceId.ToLower() != "null")
+                    {
+                        try
+                        {
+                            tempData = DatabaseHandler.GetLastData(_connectionString, tempService.DeviceId);
+
+                            if (tempData != null)
+                            {
+                                //se a humidade do solo estiver muito alta não liga a irrigação
+                                if (Convert.ToDouble(Data.GetData(tempData,"Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) >= _irrigationConfig.MaxSoilHumidity)
+                                {
+                                    canRunIrrigation = false;
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _log.Error("Error on compute soil humidity data to decision. " + e.Message, e);
+                        }
+                    }
+
+                    //descobre o dispositivo onde o sensor de temperatura está conectado
+                    tempService = _services.FirstOrDefault(Service => Service.ServiceName == "irrigation.Temperature");
+                    if (tempService.DeviceId.ToLower() != "null")
+                    {
+                        try
+                        {
+                            tempData = DatabaseHandler.GetLastData(_connectionString, tempService.DeviceId);
+
+                            if (tempData != null)
+                            {
+                                //se a temperatura do àr estiver muito alta não liga a irrigação
+                                if (Convert.ToDouble(Data.GetData(tempData,"Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) >=_irrigationConfig.MaxAirTemperature)
+                                {
+                                    canRunIrrigation = false;
+                                }
+                                //se a temperatura do àr estiver muito baixa não liga a irrigação
+                                else if (Convert.ToDouble(Data.GetData(tempData,"Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) <=_irrigationConfig.MinAirTemperature)
+                                {
+                                    canRunIrrigation = false;
+                                }
+                            }
+                        }
+                        catch(Exception e)
+                        {
+                            _log.Error("Error on compute temperature data to decision. " + e.Message, e);
+                        }
+                    }
+
+                    //se alterar o valor do gatilho
+                    if (_canRunIrrigation != canRunIrrigation)
+                    {
+                        _canRunIrrigation = canRunIrrigation;
+
+                        if (canRunIrrigation)
+                        {
+                            _log.Info("The environment conditions are perfect to tur on the irrigation system. Enabling it...");
+                        }
+                        else
+                        {
+                            _log.Info("The environment conditions aren't perfect to tur on the irrigation system. Disabling it...");
+                        }
+
+                    }
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Error on make decisions. " + e.Message, e);
+                }
+
+                Thread.Sleep(tickRate);
             }
         }
 
@@ -1131,23 +1382,32 @@ namespace Domus
             }
             else if (data.Contains("GetWeather"))
             {
-                try
+                if (_irrigationConfig.UseForecast)
                 {
-                    WeatherData weather = _weather.CheckWeather();
+                    try
+                    {
+                        WeatherData weather = _weather.CheckWeather();
 
-                    ClientWriteSerialized(stream, weather);
+                        ClientWriteSerialized(stream, weather);
 
-                    _log.Info("Weather sent to user " + user.Username + "@" + me.ClientIp);
+                        _log.Info("Weather sent to user " + user.Username + "@" + me.ClientIp);
+                    }
+                    catch (WebException e)
+                    {
+                        _log.Warn("Fail to sent weather to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                        ClientWrite(stream, "failToGetWeather");
+                    }
+                    catch (Exception e)
+                    {
+                        _log.Error("Fail to sent weather to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                    }
                 }
-                catch (WebException e)
+                else
                 {
-                    _log.Warn("Fail to sent weather to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
-                    ClientWrite(stream,"failToGetWeather");
+                    _log.Warn("Weather is disabled, fail to send data to " + user.Username + "@" + me.ClientIp);
+                    ClientWrite(stream, "failToGetWeather");
                 }
-                catch (Exception e)
-                {
-                    _log.Error("Fail to sent weather to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
-                }
+                
             }
             else if (data.Contains("GetCisternConfig"))
             {
@@ -1218,6 +1478,8 @@ namespace Domus
                             throw new Exception("Error on insert cistern configuration.");
                     }
 
+                    _cisternConfig = DatabaseHandler.GetCisternConfig(_connectionString);
+
                     ClientWrite(stream, "ConfigSaved");
 
                     _log.Info("The SaveCisternConfig request from " + user.Username + "@" + me.ClientIp + " was successfully completed");
@@ -1241,8 +1503,7 @@ namespace Domus
                 }
 
                 try
-                
-{
+                {
                     List<Service> services = DatabaseHandler.GetAllServices(_connectionString);
 
                     ClientWriteSerialized(stream, services);
@@ -1475,6 +1736,8 @@ namespace Domus
                             throw new Exception("Error on insert irrigation configuration.");
                     }
 
+                    _irrigationConfig = DatabaseHandler.GetIrrigationConfig(_connectionString);
+
                     ClientWrite(stream, "ConfigSaved");
 
                     _log.Info("The SaveIrrigationConfig request from " + user.Username + "@" + me.ClientIp + " was successfully completed");
@@ -1564,26 +1827,36 @@ namespace Domus
         {
             _log.Info("Updating forecast informations");
 
-            try
+            if (_irrigationConfig.UseForecast)
             {
-                _forecast = _weather.CheckForecast();
+                try
+                {
+                    _forecast = _weather.CheckForecast();
 
-                _log.Info("Successfully updated forecasts for "+ _forecast.LocationName + ","+ _forecast.LocationCountry + " ("+ _forecast.LocationLatitude + ";"+ _forecast.LocationLongitude + ") ");
-            }
-            catch (Exception e)
-            {
-                _log.Error("Fail to update forecast informations for "+ _config.CityName + ","+ _config.CountryId + " ==> " + e.Message);
+                    _log.Info("Successfully updated forecasts for " + _forecast.LocationName + "," + _forecast.LocationCountry + " (" + _forecast.LocationLatitude + ";" + _forecast.LocationLongitude + ") ");
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Fail to update forecast informations for " + _config.CityName + "," + _config.CountryId + " ==> " + e.Message);
+                }
             }
         }
 
         //Função que liga a irrigação
         static async Task TurnOnIrrigation(int time)
         {
-            _log.Info("Irrigation turned on.");
+            if (_canRunIrrigation)
+            {
+                _log.Info("Irrigation turned on.");
 
-            Thread.Sleep(time * 1000);
+                Thread.Sleep(time * 1000);
 
-            _log.Info("Irrigation turned off.");
+                _log.Info("Irrigation turned off.");
+            }
+            else
+            {
+                _log.Info("The weather does not seem to be perfect for irrigation. Skipping this schedule.");
+            }
         }
 
         //Garbage colector que limpa a lista de clientes e devices conectados

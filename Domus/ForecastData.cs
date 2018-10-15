@@ -10,6 +10,7 @@ namespace DomusSharedClasses
 
         public DateTime TimeTo { get; private set; }
 
+        //"none" for nothing, "rain" for rain, and "snow" for snow
         public float PrecipitationValue { get; private set; }
 
         public string PrecipitationType { get; private set; }

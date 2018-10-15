@@ -453,6 +453,7 @@ namespace Domus
             Service tempService;
             bool forecastNoRain = true;
             DateTime lastForecastAnalyzedTime = DateTime.Now.AddDays(-1);
+            int tickRate = _config.MinDataDelay * 100;
 
             while (_desligar == false)
             {
@@ -472,6 +473,8 @@ namespace Domus
                             {
                                 canRunIrrigation = false;
                                 forecastNoRain = false;
+
+                                break;
                             }
                         }
                     }
@@ -587,7 +590,7 @@ namespace Domus
                     _log.Error("Error on make decisions. " + e.Message, e);
                 }
 
-                Thread.Sleep(10000);
+                Thread.Sleep(tickRate);
             }
         }
 

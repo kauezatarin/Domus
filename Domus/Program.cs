@@ -576,11 +576,11 @@ namespace Domus
 
                         if (canRunIrrigation)
                         {
-                            _log.Info("The environment conditions are perfect to tur on the irrigation system. Enabling it...");
+                            _log.Info("The environment conditions are perfect to turn on the irrigation system. Enabling it...");
                         }
                         else
                         {
-                            _log.Info("The environment conditions aren't perfect to tur on the irrigation system. Disabling it...");
+                            _log.Info("The environment conditions aren't perfect to turn on the irrigation system. Disabling it...");
                         }
 
                     }

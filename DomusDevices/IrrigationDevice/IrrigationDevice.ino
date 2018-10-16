@@ -66,13 +66,13 @@ float temperatura;
 float humidade;
 
 //sensor de fluxo de água
-int contaPulso = 0; //Variável para a quantidade de pulsos
-float litros = 0; //Variável para Quantidade de agua
+volatile int contaPulso = 0; //Variável para a quantidade de pulsos
+volatile float litros = 0; //Variável para Quantidade de agua
 
 //bomba de água
-bool isPumpOn = false;
-unsigned long pumpStartTime = 0;//variavel que armazena o horario de inicio da bomba
-unsigned long pumpRunTime = 0;//variavel que armazena o tempo de execução da bomba
+volatile bool isPumpOn = false;
+volatile unsigned long pumpStartTime = 0;//variavel que armazena o horario de inicio da bomba
+volatile unsigned long pumpRunTime = 0;//variavel que armazena o tempo de execução da bomba
 
 //declaração de funções
 bool tryConnection();

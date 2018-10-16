@@ -16,6 +16,7 @@
 #include <DHT_U.h>
 #include <EEPROM.h>
 #include <Arduino.h> // for type definitions
+#include <FlowMeter.h>//biblioteca para leitura do sensor de fluxo de água
 
 #define DHTPIN A1 // pino que estamos conectado
 #define DHTTYPE DHT11 // DHT 11
@@ -65,14 +66,15 @@ DHT dht(DHTPIN, DHTTYPE);
 float temperatura;
 float humidade;
 
-//sensor de fluxo de água
-volatile int contaPulso = 0; //Variável para a quantidade de pulsos
-volatile float litros = 0; //Variável para Quantidade de agua
-
 //bomba de água
 volatile bool isPumpOn = false;
 volatile unsigned long pumpStartTime = 0;//variavel que armazena o horario de inicio da bomba
 volatile unsigned long pumpRunTime = 0;//variavel que armazena o tempo de execução da bomba
+
+//sensor de fluxo de água
+FlowSensorProperties MySensor = {30.0f, 7.5f, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
+FlowMeter Meter = FlowMeter(FLOW_SENSOR, MySensor);
+const unsigned long period = 1000;// seta o valor  do tick rate para 1 segunto, assim temos litros por segundo (1000 ms)
 
 //declaração de funções
 bool tryConnection();
@@ -90,8 +92,8 @@ void setup() {
   
   Serial.begin(9600);
 
-  pinMode(FLOW_SENSOR, INPUT);
-  attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR), incrementPulse, RISING); //Configura o pino do sensor interrupção
+  attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR), MeterISR, RISING); //Configura o pino do sensor interrupção
+  Meter.reset();//as vezes o vinculo gera alguns pulsos indesejados
 
   pinMode(PUMP_PORT, OUTPUT);
   digitalWrite(PUMP_PORT, HIGH);
@@ -153,7 +155,7 @@ void loop() {
     }
     else
     {
-      if((millis() - lastTime) >= messageDelay)
+      if(!isPumpOn && (millis() - lastTime) >= messageDelay)
       {
         lastTime = millis();
         outData = "";
@@ -167,15 +169,12 @@ void loop() {
         outData += dht.computeHeatIndex(temperatura, humidade, false);//sensação termica
         
         //se houver uma leitura finalizada da bomba
-        Serial.println("Foi0");
-        if(!isPumpOn && litros != 0)
+        if(!isPumpOn && Meter.getTotalVolume() != 0)
         {
-          Serial.println("Foi4");
           outData += ";";
-          outData += litros;
-          Serial.println("Foi5");
+          outData += Meter.getTotalVolume();
 
-          litros = 0;
+          Meter.reset();
         }
         else
         {
@@ -189,21 +188,15 @@ void loop() {
       //caso a bomba esteja ligada, contabiliza o volude de água gasto
       if(isPumpOn)
       {
-        contaPulso = 0;//Zera a variável
-        sei(); //Habilita interrupção
-        delay (1000); //Aguarda 1 segundo
-        cli(); //Desabilita interrupção
-        
-        litros += (contaPulso / 7.5) / 60; //Converte para L
+        delay (period); //Aguarda 1 segundo
+        Meter.tick(period);//Mede a quantidade de água ue passou pelo sensor
 
-        Serial.println(litros);
+        Serial.println(Meter.getTotalVolume());
 
         //caso ja tenha dado o tempo de a bomba desligar
         if((millis() - pumpStartTime) >= pumpRunTime)
         {
-          Serial.println("Foi1");
           setPumpStatus(false);
-          Serial.println("Foi2");
         }
       }
     }
@@ -239,22 +232,18 @@ void setPumpStatus(bool stat)
   {
     digitalWrite(PUMP_PORT,LOW);
     isPumpOn = true;
-    pumpStartTime = millis();
   }
   else
   {
     digitalWrite(PUMP_PORT,HIGH);
     isPumpOn = false;//CAUSANDO O BUG
-    Serial.println("Foi9");
   }
-
-  Serial.println("Foi10");
 }
 
-//Incrementa a variável de pulsos
-void incrementPulse ()
+//Conta o numero de pulsos
+void MeterISR() 
 {
- contaPulso++; 
+  Meter.count();
 }
 
 //tenta se conectar ao servidor

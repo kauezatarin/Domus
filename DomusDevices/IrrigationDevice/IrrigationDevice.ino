@@ -72,7 +72,8 @@ volatile unsigned long pumpStartTime = 0;//variavel que armazena o horario de in
 volatile unsigned long pumpRunTime = 0;//variavel que armazena o tempo de execução da bomba
 
 //sensor de fluxo de água
-FlowSensorProperties MySensor = {30.0f, 7.5f, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
+FlowSensorProperties MySensor = {30.0f, 7.0f, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
+//FlowSensorProperties MySensor = {30.0f, 7.5f, {0.15, 0.25, 0.50, 0.75, 1, 1.25, 1.50, 1.75, 2.00, 2.25}};
 FlowMeter Meter = FlowMeter(FLOW_SENSOR, MySensor);
 const unsigned long period = 1000;// seta o valor  do tick rate para 1 segunto, assim temos litros por segundo (1000 ms)
 
@@ -169,12 +170,12 @@ void loop() {
         outData += dht.computeHeatIndex(temperatura, humidade, false);//sensação termica
         
         //se houver uma leitura finalizada da bomba
-        if(!isPumpOn && Meter.getTotalVolume() != 0)
+        if(!isPumpOn && (Meter.getTotalVolume() != 0))
         {
           outData += ";";
           outData += Meter.getTotalVolume();
 
-          Meter.reset();
+          Meter = FlowMeter(FLOW_SENSOR, MySensor);
         }
         else
         {
@@ -189,14 +190,13 @@ void loop() {
       if(isPumpOn)
       {
         delay (period); //Aguarda 1 segundo
-        Meter.tick(period);//Mede a quantidade de água ue passou pelo sensor
-
-        Serial.println(Meter.getTotalVolume());
+        Meter.tick(period);//Mede a quantidade de água que passou pelo sensor
 
         //caso ja tenha dado o tempo de a bomba desligar
         if((millis() - pumpStartTime) >= pumpRunTime)
         {
           setPumpStatus(false);
+          Serial.println("Desligou");
         }
       }
     }
@@ -232,6 +232,7 @@ void setPumpStatus(bool stat)
   {
     digitalWrite(PUMP_PORT,LOW);
     isPumpOn = true;
+    pumpStartTime = millis();
   }
   else
   {
@@ -432,7 +433,7 @@ void executeSerialCommand()
   }
   else if(command[0] == '4')//caso receba o comando de limpeza reseta a memoria
   {
-    pumpRunTime = 10000;//recebe o novo tempo
+    pumpRunTime = 100000;//recebe o novo tempo
     setPumpStatus(true);
 
     Serial.println("ok");

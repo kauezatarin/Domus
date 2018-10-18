@@ -595,6 +595,52 @@ namespace Domus
                         }
                     }
 
+                    //descobre o dispositivo onde o sensor de nivel da cisterna está
+                    tempService = _services.FirstOrDefault(Service => Service.ServiceName == "cistern.LevelSensor");
+                    if (tempService.DeviceId.ToLower() != "null")
+                    {
+                        try
+                        {
+                            tempData = DatabaseHandler.GetLastData(_connectionString, tempService.DeviceId);
+
+                            if (tempData != null)
+                            {
+                                //se o nivel da água estiver muito baixo não liga a irrigação
+                                if (Convert.ToDouble(Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) <= _cisternConfig.MinWaterLevel)
+                                {
+                                    canRunIrrigation = false;
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _log.Error("Error on compute temperature data to decision. " + e.Message, e);
+                        }
+                    }
+
+                    //descobre o dispositivo onde o sensor de nivel da cisterna está
+                    tempService = _services.FirstOrDefault(Service => Service.ServiceName == "cistern.RainSensor");
+                    if (tempService.DeviceId.ToLower() != "null")
+                    {
+                        try
+                        {
+                            tempData = DatabaseHandler.GetLastData(_connectionString, tempService.DeviceId);
+
+                            if (tempData != null)
+                            {
+                                //se estiver chovendo não liga a irrigação
+                                if (Convert.ToDouble(Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) > 0)
+                                {
+                                    canRunIrrigation = false;
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _log.Error("Error on compute temperature data to decision. " + e.Message, e);
+                        }
+                    }
+
                     //se alterar o valor do gatilho
                     if (_canRunIrrigation != canRunIrrigation)
                     {
@@ -607,6 +653,10 @@ namespace Domus
                         else
                         {
                             _log.Info("The environment conditions aren't perfect to turn on the irrigation system. Disabling it...");
+
+                            //desliga a bomba caso a mesma esteja ligada
+                            SendCommandToDevice(_services.FirstOrDefault(Service =>
+                                Service.ServiceName == "irrigation.WaterPump").DeviceId, "stopPump");
                         }
 
                     }

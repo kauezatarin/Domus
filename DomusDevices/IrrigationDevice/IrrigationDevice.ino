@@ -187,7 +187,7 @@ void loop() {
         SerialPrint(outData, true);    
       }
       //caso a bomba esteja ligada, contabiliza o volude de água gasto
-      if(isPumpOn)
+      else if(isPumpOn)
       {
         delay (period); //Aguarda 1 segundo
         Meter.tick(period);//Mede a quantidade de água que passou pelo sensor
@@ -196,7 +196,7 @@ void loop() {
         if((millis() - pumpStartTime) >= pumpRunTime)
         {
           setPumpStatus(false);
-          Serial.println("Desligou");
+          SerialPrint("Desligou",true);
         }
       }
     }
@@ -302,6 +302,8 @@ void executeCommand(String command)
     SerialPrint("Recebido comando de desligamento de servicor. Conexão encerrada. Hibernando por 240 segundos...",true);
     client.stop();
     data_delay = DATA_DELAY;
+
+    setPumpStatus(false);
 
     delay(240000);
   }
@@ -433,7 +435,7 @@ void executeSerialCommand()
   }
   else if(command[0] == '4')//caso receba o comando de limpeza reseta a memoria
   {
-    pumpRunTime = 100000;//recebe o novo tempo
+    pumpRunTime = 40000;//recebe o novo tempo
     setPumpStatus(true);
 
     Serial.println("ok");

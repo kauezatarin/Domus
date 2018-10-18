@@ -59,7 +59,7 @@ String inData = String(100);
 String outData = String(100);
 char c;
 
-bool isDebugging = true;
+bool isDebugging = false;
 
 //sensor de humidade e temperatura
 DHT dht(DHTPIN, DHTTYPE);
@@ -129,7 +129,7 @@ void loop() {
   // caso receba dados pela serial
   if (Serial.available() > 0)
   {
-    //isDebugging = false; // desliga o envio de textos de depuração através da serial
+    isDebugging = false; // desliga o envio de textos de depuração através da serial
     executeSerialCommand();
   }
 
@@ -197,6 +197,12 @@ void loop() {
         {
           setPumpStatus(false);
           SerialPrint("Desligou",true);
+
+          delay(100);
+          
+          outData = "pumpOff";
+    
+          client.print(outData);          
         }
       }
     }
@@ -320,8 +326,12 @@ void executeCommand(String command)
   }
   else if(command.startsWith("startPump"))//liga a bomba de água
   {    
-    pumpRunTime = long(command.substring(11).toInt()) * 1000;//recebe o novo tempo
+    pumpRunTime = long(command.substring(9).toInt()) * 1000;//recebe o novo tempo
     setPumpStatus(true);
+
+    outData = "pumpOn";
+    
+    client.print(outData);
   }
 }
 

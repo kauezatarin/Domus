@@ -333,6 +333,14 @@ void executeCommand(String command)
     
     client.print(outData);
   }
+  else if(command.startsWith("stopPump"))//desliga a bomba de água
+  {    
+    setPumpStatus(false);
+
+    outData = "pumpOff";
+    
+    client.print(outData);
+  }
 }
 
 //executa comandos recebidos pela serial

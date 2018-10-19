@@ -445,6 +445,32 @@ namespace Domus
             }
         }
 
+        //adiciona um comando a ser executado no dispositivo
+        private static bool SendCommandToDevice(string deviceId, string command)
+        {
+            try
+            {
+                _deviceConnections
+                    .FirstOrDefault(ConnectionCommandStore => ConnectionCommandStore.DeviceUniqueId == deviceId)
+                    .Command = command;
+
+                return true;
+            }
+            catch (NullReferenceException)
+            {
+                _log.Warn(
+                    "The device " + deviceId + " is offline. The command will not be sent.");
+
+                return false;
+            }
+            catch (Exception e)
+            {
+                _log.Error("Fail to send the command '" + command +"' to the device " + deviceId + " - " + e.Message,e);
+
+                return false;
+            }
+        }
+
         //função de tomada de decisões
         private static void DecisionMakerThread()
         {
@@ -569,6 +595,52 @@ namespace Domus
                         }
                     }
 
+                    //descobre o dispositivo onde o sensor de nivel da cisterna está
+                    tempService = _services.FirstOrDefault(Service => Service.ServiceName == "cistern.LevelSensor");
+                    if (tempService.DeviceId.ToLower() != "null")
+                    {
+                        try
+                        {
+                            tempData = DatabaseHandler.GetLastData(_connectionString, tempService.DeviceId);
+
+                            if (tempData != null)
+                            {
+                                //se o nivel da água estiver muito baixo não liga a irrigação
+                                if (Convert.ToDouble(Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) <= _cisternConfig.MinWaterLevel)
+                                {
+                                    canRunIrrigation = false;
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _log.Error("Error on compute temperature data to decision. " + e.Message, e);
+                        }
+                    }
+
+                    //descobre o dispositivo onde o sensor de nivel da cisterna está
+                    tempService = _services.FirstOrDefault(Service => Service.ServiceName == "cistern.RainSensor");
+                    if (tempService.DeviceId.ToLower() != "null")
+                    {
+                        try
+                        {
+                            tempData = DatabaseHandler.GetLastData(_connectionString, tempService.DeviceId);
+
+                            if (tempData != null)
+                            {
+                                //se estiver chovendo não liga a irrigação
+                                if (Convert.ToDouble(Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) > 0)
+                                {
+                                    canRunIrrigation = false;
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _log.Error("Error on compute temperature data to decision. " + e.Message, e);
+                        }
+                    }
+
                     //se alterar o valor do gatilho
                     if (_canRunIrrigation != canRunIrrigation)
                     {
@@ -581,6 +653,10 @@ namespace Domus
                         else
                         {
                             _log.Info("The environment conditions aren't perfect to turn on the irrigation system. Disabling it...");
+
+                            //desliga a bomba caso a mesma esteja ligada
+                            SendCommandToDevice(_services.FirstOrDefault(Service =>
+                                Service.ServiceName == "irrigation.WaterPump").DeviceId, "stopPump");
                         }
 
                     }
@@ -805,6 +881,14 @@ namespace Domus
                                 getingDeviceInfos = true;
                                 ClientWrite(stream, "SendInfos");//get device infos from device
                             }
+                            else if (data == "pumpOn")
+                            {
+                                _log.Info("Device '" + me.DeviceUniqueId + "' has turned the irrigation pump on.");
+                            }
+                            else if (data == "pumpOff")
+                            {
+                                _log.Info("Device '" + me.DeviceUniqueId + "' has turned the irrigation pump off.");
+                            }
                             else if (data != "imhr")
                             {
                                 Data deviceData = new Data(0, me.DeviceUniqueId);
@@ -848,6 +932,21 @@ namespace Domus
                         lostConnection = true;
                     }
                 }
+
+                else if (me.Command != null)
+                {
+                    if (ClientWrite(stream, me.Command))
+                    {
+                        _log.Info("Command " + me.Command + " sent to the device '" + me.DeviceUniqueId + "'");
+                    }
+                    else
+                    {
+                        _log.Error("Error on send the command " + me.Command  + " to the device " + me.DeviceUniqueId);
+                    }
+
+                    me.Command = null;
+                }
+
                 else
                 {
                     if (timeOutCounter == me.DataDelay)//se após x segundos não houver comunicação, verifica se o cliente esta online
@@ -1539,6 +1638,9 @@ namespace Domus
 
                     DatabaseHandler.UpdateService(_connectionString, temp);
 
+                    _services.First(Service => Service.ServiceId == temp.ServiceId).DeviceId = temp.DeviceId;
+                    _services.First(Service => Service.ServiceId == temp.ServiceId).DevicePortNumber = temp.DevicePortNumber;
+
                     ClientWrite(stream, "LinkUpdated");
 
                     _log.Info("The UpdateLink request from " + user.Username + "@" + me.ClientIp + " was successfully completed and updated the service " + temp.ServiceName + ".");
@@ -1595,6 +1697,12 @@ namespace Domus
 
                     DatabaseHandler.InsertIrrigationSchedule(_connectionString, temp);
 
+                    List<IrrigationSchedule> tempList = new List<IrrigationSchedule>();
+
+                    tempList.Add(temp);
+
+                    ScheduleIrrigationTaskts(tempList);
+
                     ClientWrite(stream, "ScheduleAdded");
 
                     _log.Info("The AddIrrigationSchedule request from " + user.Username + "@" + me.ClientIp +
@@ -1628,6 +1736,10 @@ namespace Domus
 
                     DatabaseHandler.UpdateIrrigationSchedule(_connectionString, temp);
 
+                    _scheduler.DeleteAllTasks();
+
+                    ScheduleIrrigationTaskts(DatabaseHandler.GetAllIrrigationSchedules(_connectionString));
+
                     ClientWrite(stream, "ScheduleUpdated");
 
                     _log.Info("The UpdateIrrigationSchedule request from " + user.Username + "@" + me.ClientIp + " was successfully completed and updated the schedule " + temp.ScheduleName + ".");
@@ -1655,6 +1767,10 @@ namespace Domus
                     _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an DeleteIrrigationSchedule request.");
 
                     DatabaseHandler.DeleteIrrigationSchedule(_connectionString, data.Split(";")[1]);
+
+                    _scheduler.DeleteAllTasks();
+
+                    ScheduleIrrigationTaskts(DatabaseHandler.GetAllIrrigationSchedules(_connectionString));
 
                     ClientWrite(stream, "ScheduleDeleted");
 
@@ -1847,11 +1963,36 @@ namespace Domus
         {
             if (_canRunIrrigation)
             {
-                _log.Info("Irrigation turned on.");
+                try
+                {
+                    Service tempService =
+                        _services.FirstOrDefault(Service => Service.ServiceName == "irrigation.WaterPump");
 
-                Thread.Sleep(time * 1000);
+                    if (tempService == null)
+                    {
+                        _log.Error(
+                            "There is no service 'irrigation.WaterPump' available. Please, contact the admin.");
 
-                _log.Info("Irrigation turned off.");
+                        return;
+                    }
+                    else if (tempService.DeviceId == "NULL")
+                    {
+                        _log.Warn(
+                            "There is no device link with the 'irrigation.WaterPump' service. The irrigation will not turn on.");
+
+                        return;
+                    }
+
+                    if (!SendCommandToDevice(tempService.DeviceId, "startPump " + time))
+                    {
+                        _log.Error("Error on send 'startPump " + time + "' command to the device " +
+                                   tempService.DeviceId);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
             }
             else
             {

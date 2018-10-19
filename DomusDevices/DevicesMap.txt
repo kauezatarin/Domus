@@ -1,3 +1,6 @@
+===========PINOS RESERVADOS============
+
+
 ===============HANDSHAKE===============
 
 1º) device envia --> shakeback
@@ -43,3 +46,8 @@ byte 8 a 11 --> endereço de IP do dispositivo. (utilizado apenas se o DHCP estiv
 byte 12 a 17 --> endereço MAC do dispositivo. (deve ser unico para cada dispositivo)
 
 byte 18 a 50 --> chave unica do dispositivo. Contem 32 bytes, nula por padrão e deve ser definida na primeira configuração.
+
+========COMANDOS ESPECIFICOS===========
+
+--------IRRIGATION DEVICE--------------
+startPump t --> liga a bomba de água por x tempo em segundos. ex: startPump 300

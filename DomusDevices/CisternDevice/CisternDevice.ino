@@ -154,7 +154,7 @@ void loop() {
         outData += ";";
         outData += humidade;//humidade do solo
         outData += ";";
-        outData += nivel;//nivel da cisterna
+        outData += nivel < 0? 0 : nivel;//nivel da cisterna
         
         client.print(outData);
         SerialPrint("Dados enviados: ",true);

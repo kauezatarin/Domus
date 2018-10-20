@@ -478,8 +478,11 @@ namespace Domus
             Data tempData;
             Service tempService;
             bool forecastNoRain = true;
+            bool isRaining = false;
+            bool isRainingLastStatus = false;
             DateTime lastForecastAnalyzedTime = DateTime.Now.AddDays(-1);
             int tickRate = _config.MinDataDelay * 100;
+            DateTime rainStartTime = DateTime.Now;
 
             while (_desligar == false)
             {
@@ -618,7 +621,7 @@ namespace Domus
                         }
                     }
 
-                    //descobre o dispositivo onde o sensor de nivel da cisterna está
+                    //descobre o dispositivo onde o sensor de chuva da cisterna está
                     tempService = _services.FirstOrDefault(Service => Service.ServiceName == "cistern.RainSensor");
                     if (tempService.DeviceId.ToLower() != "null")
                     {
@@ -631,7 +634,18 @@ namespace Domus
                                 //se estiver chovendo não liga a irrigação
                                 if (Convert.ToDouble(Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) > 0)
                                 {
+                                    //se a chuva tiver acabado de iniciar, pega o horário
+                                    if (!isRaining)
+                                    {
+                                        rainStartTime = tempData.CreatedAt;
+                                    }
+
+                                    isRaining = true;
                                     canRunIrrigation = false;
+                                }
+                                else
+                                {
+                                    isRaining = false;
                                 }
                             }
                         }
@@ -664,6 +678,32 @@ namespace Domus
                 catch (Exception e)
                 {
                     _log.Error("Error on make decisions. " + e.Message, e);
+                }
+
+                //controla a válvula da cisterna
+                try
+                {
+                    //se estiver chovendo, o comando ja não tiver sido enviado e já se passaram x minutos do inicio da chuva abre a valvula
+                    if (isRaining && !isRainingLastStatus && (DateTime.Now - rainStartTime).TotalMinutes >= _cisternConfig.TimeOfRain)
+                    {
+                        isRainingLastStatus = isRaining;
+                        SendCommandToDevice(
+                            _services.FirstOrDefault(Service => Service.ServiceName == "cistern.RainSensor").DeviceId,
+                            "openValve");
+                    }
+                    //se parar de chover e a válvula ja estiver aberta, fecha a mesma
+                    else if(!isRaining && isRainingLastStatus)
+                    {
+                        SendCommandToDevice(
+                            _services.FirstOrDefault(Service => Service.ServiceName == "cistern.RainSensor").DeviceId,
+                            "closeValve");
+                        
+                        isRainingLastStatus = isRaining;
+                    }
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Error on control the cistern valve. " + e.Message, e);
                 }
 
                 Thread.Sleep(tickRate);

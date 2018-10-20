@@ -1,30 +1,27 @@
-/* Domus Irrigation Device Code
+/* Domus Base Device Code
  *  
  * É necessário alterar o valor definido em SERIAL_RX_BUFFER_SIZE para 128 no arquivo %appData%\Local\Arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino\HardwareSerial.h
  * para que seja possivel receber todas as informações necessárias para configuração do dispositivo através da serial.
- * 
- * Este Dispositivo é responsável pelos 
- * Sensores: Temperatura, Umidade, RealFeel e Fluxo de água
- * Atuadores: Bomba de Água da irrigação
  * 
  * Desenvolvido por: Kauê Zatarin
  */
 
 #include <SPI.h>
 #include <Ethernet.h>
-#include <DHT.h>
-#include <DHT_U.h>
 #include <EEPROM.h>
 #include <Arduino.h> // for type definitions
-#include <FlowMeter.h>//biblioteca para leitura do sensor de fluxo de água
+#include <Ultrasonic.h>
 
-#define DHTPIN A1 // pino que estamos conectado
-#define DHTTYPE DHT11 // DHT 11
+#define RAINPIN 3
+#define SOILPIN A5
+#define VALVEPIN 5
+
+//sensor ultra sonico
+#define PINO_TRIGGER 6
+#define PINO_ECHO 7
+#define CISTER_HEIGHT 15
 
 #define DATA_DELAY 30 //preserva o delay original para restauração futura
-
-#define PUMP_PORT 5 //pino da bomba de agua
-#define FLOW_SENSOR 3 //pino do sensor de fluxo de água
 
 char DEVICE_UNIQUE_ID[33] = "698dc19d489c4e4db73e28a713eab07b"; //id unico do device vinculado a sua conta
 
@@ -61,21 +58,13 @@ char c;
 
 bool isDebugging = false;
 
-//sensor de humidade e temperatura
-DHT dht(DHTPIN, DHTTYPE);
-float temperatura;
+//sensor de humidade do solo e chuva
+bool chuva;
 float humidade;
+float nivel;
+bool valveStatus = false;
 
-//bomba de água
-volatile bool isPumpOn = false;
-volatile unsigned long pumpStartTime = 0;//variavel que armazena o horario de inicio da bomba
-volatile unsigned long pumpRunTime = 0;//variavel que armazena o tempo de execução da bomba
-
-//sensor de fluxo de água
-FlowSensorProperties MySensor = {30.0f, 7.0f, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
-//FlowSensorProperties MySensor = {30.0f, 7.5f, {0.15, 0.25, 0.50, 0.75, 1, 1.25, 1.50, 1.75, 2.00, 2.25}};
-FlowMeter Meter = FlowMeter(FLOW_SENSOR, MySensor);
-const unsigned long period = 1000;// seta o valor  do tick rate para 1 segunto, assim temos litros por segundo (1000 ms)
+Ultrasonic ultrasonic(PINO_TRIGGER, PINO_ECHO); 
 
 //declaração de funções
 bool tryConnection();
@@ -86,18 +75,16 @@ void EEPROM_save();
 void EEPROM_loadUniqueId(int addres, int keySize);
 void EEPROM_Clear();
 void SerialPrint(String text, bool debug);
-void incrementPulse ();
-void setPumpStatus(bool stat);
 
 void setup() {
   
   Serial.begin(9600);
 
-  attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR), MeterISR, RISING); //Configura o pino do sensor interrupção
-  Meter.reset();//as vezes o vinculo gera alguns pulsos indesejados
+  pinMode(RAINPIN, INPUT);
+  pinMode(SOILPIN, INPUT);
+  pinMode(VALVEPIN, OUTPUT);
 
-  pinMode(PUMP_PORT, OUTPUT);
-  digitalWrite(PUMP_PORT, HIGH);
+  digitalWrite(VALVEPIN, HIGH);
 
   if(EEPROM.read(0) != 'c')
   {
@@ -120,8 +107,6 @@ void setup() {
     //Ethernet.begin(mac, ip, myDns, gateway, subnet);
     Ethernet.begin(mac, ip);
   }
-  
-  dht.begin();
 }
 
 void loop() {
@@ -156,66 +141,35 @@ void loop() {
     }
     else
     {
-      if(!isPumpOn && (millis() - lastTime) >= messageDelay)
+      if((millis() - lastTime) >= messageDelay)
       {
+        long microsec = ultrasonic.timing();
         lastTime = millis();
         outData = "";
-        temperatura = dht.readTemperature();
-        humidade = dht.readHumidity();
+        chuva = 1 - digitalRead(RAINPIN);
+        humidade = 100 - map(analogRead(SOILPIN), 0, 1023, 0, 100);
+        nivel = 100 - ((ultrasonic.convert(microsec, Ultrasonic::CM) * 100) / CISTER_HEIGHT);
 
-        outData += temperatura;//temperatura
+        outData += chuva;//está chovendo?
         outData += ";";
-        outData += humidade;//humidade do ar
+        outData += humidade;//humidade do solo
         outData += ";";
-        outData += dht.computeHeatIndex(temperatura, humidade, false);//sensação termica
-        
-        //se houver uma leitura finalizada da bomba
-        if(!isPumpOn && (Meter.getTotalVolume() != 0))
-        {
-          outData += ";";
-          outData += Meter.getTotalVolume();
-
-          Meter = FlowMeter(FLOW_SENSOR, MySensor);
-        }
-        else
-        {
-          outData += ";0";
-        }
+        outData += nivel < 0? 0 : nivel;//nivel da cisterna
         
         client.print(outData);
         SerialPrint("Dados enviados: ",true);
-        SerialPrint(outData, true);    
+        SerialPrint(outData, true);
       }
-      //caso a bomba esteja ligada, contabiliza o volude de água gasto
-      else if(isPumpOn)
-      {
-        delay (period); //Aguarda 1 segundo
-        Meter.tick(period);//Mede a quantidade de água que passou pelo sensor
-
-        //caso ja tenha dado o tempo de a bomba desligar
-        if((millis() - pumpStartTime) >= pumpRunTime)
-        {
-          setPumpStatus(false);
-          SerialPrint("Desligou",true);
-
-          delay(100);
-          
-          outData = "pumpOff";
-    
-          client.print(outData);          
-        }
-      }
-    }
+    }   
   }
   else
-  { 
-    //desliga a bomba caso seja perdida a conexão com o servidor
-    if(isPumpOn)
-    {
-      setPumpStatus(false);
-    }
-     
+  {  
     tryConnection();
+
+    if(valveStatus)
+    {
+      setValveStatus(false);
+    }
     
     if (!client)
     {
@@ -228,29 +182,6 @@ void loop() {
       }
     }      
   }
-}
-
-//seta o estado da bomba. True = ligado, False = desligado
-void setPumpStatus(bool stat)
-{
-  //se true liga a bomba
-  if(stat)
-  {
-    digitalWrite(PUMP_PORT,LOW);
-    isPumpOn = true;
-    pumpStartTime = millis();
-  }
-  else
-  {
-    digitalWrite(PUMP_PORT,HIGH);
-    isPumpOn = false;//CAUSANDO O BUG
-  }
-}
-
-//Conta o numero de pulsos
-void MeterISR() 
-{
-  Meter.count();
 }
 
 //tenta se conectar ao servidor
@@ -309,8 +240,6 @@ void executeCommand(String command)
     client.stop();
     data_delay = DATA_DELAY;
 
-    setPumpStatus(false);
-
     delay(240000);
   }
   else if(command.startsWith("changeTimer"))//recebe o tempo padrão de envio do servidor e realiza os ajustes
@@ -324,22 +253,34 @@ void executeCommand(String command)
     
     SerialPrint(command,true);
   }
-  else if(command.startsWith("startPump"))//liga a bomba de água
-  {    
-    pumpRunTime = long(command.substring(9).toInt()) * 1000;//recebe o novo tempo
-    setPumpStatus(true);
+  else if(command == "openValve")//recebido o comando para abrir a valvula
+  {
+    setValveStatus(true);
 
-    outData = "pumpOn";
-    
-    client.print(outData);
+    client.print("valveOpen");
   }
-  else if(command.startsWith("stopPump"))//desliga a bomba de água
-  {    
-    setPumpStatus(false);
+  else if(command == "closeValve")//recebido o comando para fechar a valvula
+  {
+    setValveStatus(false);
 
-    outData = "pumpOff";
-    
-    client.print(outData);
+    client.print("valveClosed");
+  }
+}
+
+//abre ou fecha a valvula de entrada da cisterna
+void setValveStatus(bool stat)
+{
+  if(stat)
+  {
+    digitalWrite(VALVEPIN, LOW);
+
+    valveStatus = true;
+  }
+  else
+  {
+    digitalWrite(VALVEPIN, HIGH);
+
+    valveStatus = false;
   }
 }
 
@@ -448,13 +389,6 @@ void executeSerialCommand()
   else if(command[0] == '3')//caso receba o comando de limpeza reseta a memoria
   {
     EEPROM_Clear();
-
-    Serial.println("ok");
-  }
-  else if(command[0] == '4')//caso receba o comando de limpeza reseta a memoria
-  {
-    pumpRunTime = 40000;//recebe o novo tempo
-    setPumpStatus(true);
 
     Serial.println("ok");
   }

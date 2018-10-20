@@ -929,6 +929,14 @@ namespace Domus
                             {
                                 _log.Info("Device '" + me.DeviceUniqueId + "' has turned the irrigation pump off.");
                             }
+                            else if (data == "valveOpen")
+                            {
+                                _log.Info("Device '" + me.DeviceUniqueId + "' has opened the cistern valve.");
+                            }
+                            else if (data == "valveClosed")
+                            {
+                                _log.Info("Device '" + me.DeviceUniqueId + "' has closed the cistern valve.");
+                            }
                             else if (data != "imhr")
                             {
                                 Data deviceData = new Data(0, me.DeviceUniqueId);

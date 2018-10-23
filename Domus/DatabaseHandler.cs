@@ -996,32 +996,5 @@ namespace Domus
                 }
             }
         }
-
-        /*//Count statement
-        public int Count()
-        {
-            string query = "SELECT Count(*) FROM tableinfo";
-            int Count = -1;
-
-            //Open Connection
-            if (this.OpenConnection() == true)
-            {
-                //Create Mysql Command
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-
-                //ExecuteScalar will return one value
-                Count = int.Parse(cmd.ExecuteScalar() + "");
-
-                //close Connection
-                this.CloseConnection();
-
-                return Count;
-            }
-            else
-            {
-                return Count;
-            }
-         }*/
-
     }
 }

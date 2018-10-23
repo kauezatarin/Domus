@@ -959,6 +959,44 @@ namespace Domus
             }
         }
 
+        /// <summary>
+        /// Retorna os dados de consumo de água do ano desejado
+        /// </summary>
+        internal static List<WaterConsumeData> GetWaterConsume(string connectionString, string deviceId, int devicePort, int year)
+        {
+            List<WaterConsumeData> datas = new List<WaterConsumeData>();
+            WaterConsumeData temp;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    try
+                    {
+                        conn.Open();
+                        cmd.CommandText = "SELECT month(created_at) as 'mes', year(created_at) as 'ano', sum(data"+ (devicePort + 1) +") as 'consumo' FROM domus.data where device_id = '"+ deviceId + "' and year(created_at) = '" + year + "' group by month(created_at);";
+
+                        using (MySqlDataReader dataReader = cmd.ExecuteReader())
+                        {
+                            while (dataReader.Read())
+                            {
+                                temp = Maper.MapWaterConsumeData(dataReader);
+
+                                datas.Add(temp);
+                            }
+                        }
+
+                        return datas;
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
+
+                }
+            }
+        }
+
         /*//Count statement
         public int Count()
         {

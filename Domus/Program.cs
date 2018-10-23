@@ -1913,6 +1913,23 @@ namespace Domus
                     ClientWrite(stream, "FailToSave");
                 }
             }
+            else if (data.Contains("GetWaterConsume"))
+            {
+                try
+                {
+                    Service tempService = _services.First(Service => Service.ServiceName == "irrigation.FlowSensor");
+
+                    List<WaterConsumeData> devices = DatabaseHandler.GetWaterConsume(_connectionString, tempService.DeviceId, tempService.DevicePortNumber, Convert.ToInt32(data.Split(';')[1]));
+
+                    ClientWriteSerialized(stream, devices);
+
+                    _log.Info("Sent water consume data to user " + user.Username + "@" + me.ClientIp);
+                }
+                catch (Exception e)
+                {
+                    _log.Error("Fail to send water consume data to user " + user.Username + "@" + me.ClientIp + " - " + e.Message, e);
+                }
+            }
             else
             {
                 ClientWrite(stream, "InvalidCommand");

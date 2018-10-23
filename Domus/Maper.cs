@@ -137,5 +137,19 @@ namespace Domus
 
             return config;
         }
+
+        /// <summary>
+        /// Mapeia o datareader para um objeto WaterConsumeData
+        /// </summary>
+        public static WaterConsumeData MapWaterConsumeData(MySqlDataReader dataReader)
+        {
+            WaterConsumeData data = new WaterConsumeData(
+                dataReader.GetDouble("consumo"),
+                dataReader.GetInt32("mes"),
+                dataReader.GetInt32("ano")
+            );
+
+            return data;
+        }
     }
 }

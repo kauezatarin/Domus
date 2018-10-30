@@ -160,6 +160,12 @@ void loop() {
         SerialPrint("Dados enviados: ",true);
         SerialPrint(outData, true);
       }
+      //se a cisterna chegar a 95% da capacidade, fecha a válvula
+      if(nivel >=95 && valveStatus)
+      {
+        setValveStatus(false);
+        client.print("valveClosed");
+      }
     }   
   }
   else

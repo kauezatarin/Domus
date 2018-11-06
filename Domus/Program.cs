@@ -496,6 +496,8 @@ namespace Domus
                         List<ForecastData> forecastDatas = _forecast.Forecasts;
                         lastForecastAnalyzedTime = DateTime.Today.AddMinutes(5);
 
+                        _log.Info("Analyzing the most recent forecast received...");
+
                         for (int i = 0; i < 24; i++)
                         {
                             if (forecastDatas[i].PrecipitationType != "none")
@@ -506,6 +508,8 @@ namespace Domus
                                 break;
                             }
                         }
+
+                        _log.Info("Forecast analysis completed. The new result is: RainDetected -> " + !forecastNoRain);
                     }
                     //caso ainda não tenha dado 24h apenas replica a ultima decisão
                     else

@@ -535,13 +535,18 @@ namespace Domus
                                 //se estiver chovendo não liga a irrigação
                                 if (Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")) == 1.ToString())
                                 {
+                                    isRaining = true;
                                     canRunIrrigation = false;
                                 }
-
                                 //se a ultima chuva registrada for a mais de 7 dias e a previsão do tempo não registrar chuva, ignora as demais vaiáveis e liga a irrigação.
                                 else if ((DateTime.Now - tempData.CreatedAt).TotalDays > 7 && forecastNoRain)
                                 {
                                     canRunIrrigation = true;
+                                    isRaining = false;
+                                }
+                                else
+                                {
+                                    isRaining = false;
                                 }
                             }
                         }
@@ -561,8 +566,8 @@ namespace Domus
 
                             if (tempData != null)
                             {
-                                //se a humidade do solo estiver muito alta não liga a irrigação
-                                if (Convert.ToDouble(Data.GetData(tempData,"Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) >= _irrigationConfig.MaxSoilHumidity)
+                                //se a humidade do solo estiver muito alta por conta da chuva não liga a irrigação
+                                if (isRaining && Convert.ToDouble(Data.GetData(tempData,"Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) >= _irrigationConfig.MaxSoilHumidity)
                                 {
                                     canRunIrrigation = false;
                                 }
@@ -616,40 +621,6 @@ namespace Domus
                                 if (Convert.ToDouble(Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) <= _cisternConfig.MinWaterLevel)
                                 {
                                     canRunIrrigation = false;
-                                }
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            _log.Error("Error on compute temperature data to decision. " + e.Message, e);
-                        }
-                    }
-
-                    //descobre o dispositivo onde o sensor de chuva da cisterna está
-                    tempService = _services.FirstOrDefault(Service => Service.ServiceName == "cistern.RainSensor");
-                    if (tempService.DeviceId.ToLower() != "null")
-                    {
-                        try
-                        {
-                            tempData = DatabaseHandler.GetLastData(_connectionString, tempService.DeviceId);
-
-                            if (tempData != null)
-                            {
-                                //se estiver chovendo não liga a irrigação
-                                if (Convert.ToDouble(Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) > 0)
-                                {
-                                    //se a chuva tiver acabado de iniciar, pega o horário
-                                    if (!isRaining)
-                                    {
-                                        rainStartTime = tempData.CreatedAt;
-                                    }
-
-                                    isRaining = true;
-                                    canRunIrrigation = false;
-                                }
-                                else
-                                {
-                                    isRaining = false;
                                 }
                             }
                         }

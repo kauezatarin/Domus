@@ -133,7 +133,7 @@ namespace Domus
                 }
                 else
                 {
-                    _log.Warn("Forecast system is disabled. This may reduce the irrigation system turn on decision.");
+                    _log.Warn("Forecast system is disabled. This may reduce the precision of irrigation system decisions.");
                 }
 
                 try

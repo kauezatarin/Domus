@@ -532,8 +532,8 @@ namespace Domus
                             //caso seja encontrado um registro de chuva
                             if (tempData != null)
                             {
-                                //se estiver chovendo não liga a irrigação
-                                if (Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")) == 1.ToString())
+                                //se estiver chovendo, ou a ultima chuva tiver sido registrada a menos de 3 dias não liga a irrigação
+                                if ((DateTime.Now - tempData.CreatedAt).TotalDays <= 3  && Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")) == 1.ToString())
                                 {
                                     isRaining = true;
                                     canRunIrrigation = false;

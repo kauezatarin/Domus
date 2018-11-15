@@ -555,6 +555,11 @@ namespace Domus
                                 {
                                     canOpenValve = true;
                                 }
+                                //se o ultimo registro de chuva for mais velho que 5 minutos, fecha a válvula
+                                else if (canOpenValve && (DateTime.Now - tempData.CreatedAt).TotalMinutes >= 2)
+                                {
+                                    canOpenValve = false;
+                                }
                             }
                         }
                         catch (Exception e)

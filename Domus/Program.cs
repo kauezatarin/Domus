@@ -479,7 +479,8 @@ namespace Domus
             Service tempService;
             bool forecastNoRain = true;
             bool isRaining = false;
-            bool isRainingLastStatus = false;
+            bool canOpenValve = false;
+            bool canOpenValveLastStatus = false;
             DateTime lastForecastAnalyzedTime = DateTime.Now.AddDays(-1);
             int tickRate = _config.MinDataDelay * 100;
             DateTime rainStartTime = DateTime.Now;
@@ -547,6 +548,12 @@ namespace Domus
                                 else
                                 {
                                     isRaining = false;
+                                }
+
+                                //se detectar um registro de chuva no ultimo minuto, abre a válvula
+                                if (!canOpenValve && (DateTime.Now - tempData.CreatedAt).TotalMinutes <= 1)
+                                {
+                                    canOpenValve = true;
                                 }
                             }
                         }
@@ -659,21 +666,21 @@ namespace Domus
                 try
                 {
                     //se estiver chovendo, o comando ja não tiver sido enviado e já se passaram x minutos do inicio da chuva abre a valvula
-                    if (isRaining && !isRainingLastStatus && (DateTime.Now - rainStartTime).TotalMinutes >= _cisternConfig.TimeOfRain)
+                    if (canOpenValve && !canOpenValveLastStatus && (DateTime.Now - rainStartTime).TotalMinutes >= _cisternConfig.TimeOfRain)
                     {
-                        isRainingLastStatus = isRaining;
+                        canOpenValveLastStatus = canOpenValve;
                         SendCommandToDevice(
                             _services.FirstOrDefault(Service => Service.ServiceName == "cistern.RainSensor").DeviceId,
                             "openValve");
                     }
                     //se parar de chover e a válvula ja estiver aberta, fecha a mesma
-                    else if(!isRaining && isRainingLastStatus)
+                    else if(!canOpenValve && canOpenValveLastStatus)
                     {
                         SendCommandToDevice(
                             _services.FirstOrDefault(Service => Service.ServiceName == "cistern.RainSensor").DeviceId,
                             "closeValve");
                         
-                        isRainingLastStatus = isRaining;
+                        canOpenValveLastStatus = canOpenValve;
                     }
                 }
                 catch (Exception e)

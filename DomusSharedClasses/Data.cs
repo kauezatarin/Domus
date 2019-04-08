@@ -51,13 +51,5 @@ namespace DomusSharedClasses
         public string Data3 { get; set; }
 
         public string Data4 { get; set; }
-
-        public static string GetData(Data data, string fieldName)
-        {
-            var prop = typeof(Data).GetProperty(fieldName);
-            string value = (string)prop.GetValue(data, null);
-
-            return value;
-        }
     }
 }

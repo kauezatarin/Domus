@@ -21,7 +21,7 @@ namespace Domus
 {
     class Program
     {
-        private static bool _desligar = false;//kill switch utilizado para desligar o servidor
+        private static bool _desligar = false;//kill switch used to turn off the server
         private static BlockingCollection<ConnectionCommandStore> _deviceConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static BlockingCollection<ConnectionCommandStore> _clientConnections = new BlockingCollection<ConnectionCommandStore>(new ConcurrentQueue<ConnectionCommandStore>());
         private static BlockingCollection<Service> _services = new BlockingCollection<Service>(new ConcurrentQueue<Service>());
@@ -195,7 +195,9 @@ namespace Domus
             return;
         }
 
-        //metodo que carrega as configurações dos sistemas na inicialização
+        /// <summary>
+        /// Method that loads the systems configurations at the startup
+        /// </summary>
         static void LoadConfigurations()
         {
             try
@@ -274,7 +276,9 @@ namespace Domus
             }
         }
 
-        //rotina executada quando o servidor está sendo encerrado
+        /// <summary>
+        /// Method to be executed when the server is shutting down
+        /// </summary>
         static void StopRoutine()
         {
             try
@@ -316,14 +320,23 @@ namespace Domus
             }
         }
 
-        //metodo chamado quando o servidor recebe um SIGterm
+        /// <summary>
+        /// Event called when the server receives a SIGterm
+        /// </summary>
+        /// <param name="sender">Object that calls the action</param>
+        /// <param name="e">Event's arguments</param>
         private static void OnSystemShutdown(object sender, EventArgs e)
         {
                 StopRoutine();   
         }
 
-        //função que cria a conexão com a rede
-        private static TcpListener Connect(Int32 port, bool intranet = false)
+        /// <summary>
+        /// Method that creates a TCP connection listener
+        /// </summary>
+        /// <param name="port">Port where the connection will be opened</param>
+        /// <param name="intranet">Marks the connection to be local only</param>
+        /// <returns>A new instance of <see cref="TcpListener"/> pointing to the given network and port</returns>
+        private static TcpListener Connect(int port, bool intranet = false)
         {
 
             IPAddress localAddr = IPAddress.Parse(GetLocalIpAddress());//iplocal
@@ -345,7 +358,10 @@ namespace Domus
 
         }
 
-        //função que insere os agendamentos de irrigação
+        /// <summary>
+        /// Method that schedules a new irrigation run
+        /// </summary>
+        /// <param name="schedules">List of <see cref="IrrigationSchedule"/> to be scheduled by the system</param>
         private static void ScheduleIrrigationTaskts(List<IrrigationSchedule> schedules)
         {
             foreach (IrrigationSchedule schedule in schedules)
@@ -426,7 +442,9 @@ namespace Domus
             }
         }
 
-        //função que impede que o servidor morra antes de receber o comando de desligamento
+        /// <summary>
+        /// Method that keep's the server alive until receiving the kill signal
+        /// </summary>
         private static void WaitKillCommand()
         {
             while (!_desligar)
@@ -435,7 +453,11 @@ namespace Domus
             }
         }
 
-        //função que aguarda o comando de encerramento do servidor
+        /// <summary>
+        /// Event that handles the server shutdown key press
+        /// </summary>
+        /// <param name="sender">Object that has called the event</param>
+        /// <param name="e">Event arguments</param>
         private static void ConsoleCancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             if (e.SpecialKey == ConsoleSpecialKey.ControlC)
@@ -445,7 +467,12 @@ namespace Domus
             }
         }
 
-        //adiciona um comando a ser executado no dispositivo
+        /// <summary>
+        /// Add a command to be executed by a device
+        /// </summary>
+        /// <param name="deviceId">Id of the device whose will receive the command</param>
+        /// <param name="command">Command to be executed</param>
+        /// <returns>A boolean that indicates if the command was sent successfully</returns>
         private static bool SendCommandToDevice(string deviceId, string command)
         {
             try
@@ -471,7 +498,9 @@ namespace Domus
             }
         }
 
-        //função de tomada de decisões
+        /// <summary>
+        /// Method that process all gathered data and makes decisions based on them.
+        /// </summary>
         private static void DecisionMakerThread()
         {
             bool canRunIrrigation = true;
@@ -534,7 +563,7 @@ namespace Domus
                             if (tempData != null)
                             {
                                 //se estiver chovendo, ou a ultima chuva tiver sido registrada a menos de 3 dias não liga a irrigação
-                                if ((DateTime.Now - tempData.CreatedAt).TotalDays <= 3  && Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")) == 1.ToString())
+                                if ((DateTime.Now - tempData.CreatedAt).TotalDays <= 3  && (string) tempData.GetPropertyValue( "Data" + (tempService.DevicePortNumber + 1).ToString("0")) == 1.ToString())
                                 {
                                     isRaining = true;
                                     canRunIrrigation = false;
@@ -579,7 +608,7 @@ namespace Domus
                             if (tempData != null)
                             {
                                 //se a humidade do solo estiver muito alta por conta da chuva não liga a irrigação
-                                if (isRaining && Convert.ToDouble(Data.GetData(tempData,"Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) >= _irrigationConfig.MaxSoilHumidity)
+                                if (isRaining && Convert.ToDouble(tempData.GetPropertyValue("Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) >= _irrigationConfig.MaxSoilHumidity)
                                 {
                                     canRunIrrigation = false;
                                 }
@@ -602,12 +631,12 @@ namespace Domus
                             if (tempData != null)
                             {
                                 //se a temperatura do àr estiver muito alta não liga a irrigação
-                                if (Convert.ToDouble(Data.GetData(tempData,"Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) >=_irrigationConfig.MaxAirTemperature)
+                                if (Convert.ToDouble(tempData.GetPropertyValue("Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) >=_irrigationConfig.MaxAirTemperature)
                                 {
                                     canRunIrrigation = false;
                                 }
                                 //se a temperatura do àr estiver muito baixa não liga a irrigação
-                                else if (Convert.ToDouble(Data.GetData(tempData,"Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) <=_irrigationConfig.MinAirTemperature)
+                                else if (Convert.ToDouble(tempData.GetPropertyValue("Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) <=_irrigationConfig.MinAirTemperature)
                                 {
                                     canRunIrrigation = false;
                                 }
@@ -630,7 +659,7 @@ namespace Domus
                             if (tempData != null)
                             {
                                 //se o nivel da água estiver muito baixo não liga a irrigação
-                                if (Convert.ToDouble(Data.GetData(tempData, "Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) <= _cisternConfig.MinWaterLevel)
+                                if (Convert.ToDouble(tempData.GetPropertyValue("Data" + (tempService.DevicePortNumber + 1).ToString("0")), CultureInfo.InvariantCulture) <= _cisternConfig.MinWaterLevel)
                                 {
                                     canRunIrrigation = false;
                                 }
@@ -697,7 +726,11 @@ namespace Domus
             }
         }
 
-        //thread responsavel por aguardar conexões de devices
+        /// <summary>
+        /// Thread method that is responsible for listening devices
+        /// </summary>
+        /// <param name="deviceServer">An opened connection to listening to</param>
+        /// <returns>A new <see cref="Task"/>.</returns>
         private static async Task DeviceListenerAsync(TcpListener deviceServer)
         {
 
@@ -742,8 +775,12 @@ namespace Domus
                 }
             }
         }
-        
-        //thread responsavel por aguardar conexões de clientes
+
+        /// <summary>
+        /// Thread method that is responsible for listening devices
+        /// </summary>
+        /// <param name="deviceServer">An opened connection to listening to</param>
+        /// <returns>A new <see cref="Task"/></returns>
         private static async Task ClientListenerAsync(TcpListener clientServer)
         {
 
@@ -788,8 +825,12 @@ namespace Domus
                 }
             }
         }
-        
-        //Thread que cuida dos dispositivos após conectado
+
+        /// <summary>
+        /// Handles a device after establishing a connection
+        /// </summary>
+        /// <param name="device">A device connection</param>
+        /// <param name="me">A <see cref="ConnectionCommandStore"/> that represents the current device's session.</param>
         private static void DeviceThread(TcpClient device, ConnectionCommandStore me)
         {
             // Buffer for reading data
@@ -1006,8 +1047,12 @@ namespace Domus
 
             return;
         }
-        
-        //Thread que cuida dos clientes após conectado
+
+        /// <summary>
+        /// Handles a client after establishing a connection
+        /// </summary>
+        /// <param name="device">A client connection</param>
+        /// <param name="me">A <see cref="ConnectionCommandStore"/> that represents the current client's session.</param>
         private static void ClientThread(TcpClient client, ConnectionCommandStore me)
         {
             // Buffer for reading data
@@ -1195,7 +1240,13 @@ namespace Domus
             return;
         }
 
-        //Metodo que interpreta e executa os comandos recebidos do cliente
+        /// <summary>
+        /// Method that receives and executes the client's actions
+        /// </summary>
+        /// <param name="stream">Receives the <see cref="NetworkStream"/> to the client</param>
+        /// <param name="data">The data received form the client</param>
+        /// <param name="me">A <see cref="ConnectionCommandStore"/> that represents the current client's session.</param>
+        /// <param name="user">A <see cref="User"/> that represents the user logged in</param>
         private static void ExecuteClientAction(NetworkStream stream, string data, ConnectionCommandStore me, User user)
         {
             if (data.Contains("ListDevices"))
@@ -1931,8 +1982,13 @@ namespace Domus
             }
         }
 
-        //Função que envia mensagens ao cliente conectado
-        private static bool ClientWrite(NetworkStream stream, String message)
+        /// <summary>
+        /// Method that send messages to a given client
+        /// </summary>
+        /// <param name="stream">A <see cref="NetworkStream"/> pointing to a client</param>
+        /// <param name="message">A message to be sent</param>
+        /// <returns>A <see cref="bool"/> that indicates is the message was sent successfully</returns>
+        private static bool ClientWrite(NetworkStream stream, string message)
         {
             try
             {
@@ -1947,7 +2003,11 @@ namespace Domus
             }
         }
 
-        //Função que envia objetos serializados para o cliente
+        /// <summary>
+        /// Method that send a serialized object to a client
+        /// </summary>
+        /// <param name="stream">A <see cref="NetworkStream"/> pointing to a client</param>
+        /// <param name="sendObj">An object to be sent</param>
         private static void ClientWriteSerialized(NetworkStream stream, object sendObj)
         {
             byte[] userDataBytes;
@@ -1965,7 +2025,12 @@ namespace Domus
             stream.Write(userDataBytes, 0, userDataBytes.Length);
         }
 
-        //Função que le um objeto serializado
+        /// <summary>
+        /// Method that reads a serialized object received from a client
+        /// </summary>
+        /// <param name="stream">A <see cref="NetworkStream"/> pointing to a client</param>
+        /// <param name="timeout">Max time to wait for a response</param>
+        /// <returns>A deserialized object received from the client.</returns>
         private static object ClientReadSerilized(NetworkStream stream, int timeout = -1)
         {
             byte[] readMsgLen = new byte[4];
@@ -1997,7 +2062,10 @@ namespace Domus
             return objeto;
         }
 
-        //Função que atualiza a previsão do tempo
+        /// <summary>
+        /// Method that refreshes the forecast data
+        /// </summary>
+        /// <returns>A new <see cref="Task"/></returns>
         static async Task RefreshForecast()
         {
             _log.Info("Updating forecast informations");
@@ -2017,7 +2085,11 @@ namespace Domus
             }
         }
 
-        //Função que liga a irrigação
+        /// <summary>
+        /// Method that runs the irrigation system by a given time
+        /// </summary>
+        /// <param name="time">Time to run the irrigation system</param>
+        /// <returns>A new <see cref="Task"/></returns>
         static async Task TurnOnIrrigation(int time)
         {
             if (_canRunIrrigation)
@@ -2059,7 +2131,9 @@ namespace Domus
             }
         }
 
-        //Garbage colector que limpa a lista de clientes e devices conectados
+        /// <summary>
+        /// Thread method that cleans the client's an device's connection list
+        /// </summary>
         private static void ClearConnectionList()
         {
             while (_desligar == false)
@@ -2116,6 +2190,9 @@ namespace Domus
             }
         }
 
+        /// <summary>
+        /// Method that wait all connections to be finished
+        /// </summary>
         private static void JoinAllConnections()
         {
             //Join Devices
@@ -2133,7 +2210,10 @@ namespace Domus
             }
         }
 
-        //função que resgata o IP local do servidor
+        /// <summary>
+        /// Method that gets the local server's IP
+        /// </summary>
+        /// <returns>The ip address of the server</returns>
         private static string GetLocalIpAddress()
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());

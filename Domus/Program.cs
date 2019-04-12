@@ -1290,7 +1290,7 @@ namespace Domus
 
                     _log.Info("Device " + user.Username + "@" + me.ClientIp + " has sent an AddDevice request.");
 
-                    Device temp = (Device)ClientReadSerilized(stream, 30000);
+                    Device temp = ClientReadSerilized<Device>(stream, 30000);
 
                     DatabaseHandler.InsertDevice(_connectionString, temp);
 
@@ -1336,7 +1336,7 @@ namespace Domus
 
                     _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an UpdateDevice request.");
 
-                    Device temp = (Device)ClientReadSerilized(stream, 30000);
+                    Device temp = ClientReadSerilized<Device>(stream, 30000);
 
                     DatabaseHandler.UpdateDevice(_connectionString, temp);
 
@@ -1420,7 +1420,7 @@ namespace Domus
 
                     _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an UpdateUser request.");
 
-                    User temp = (User) ClientReadSerilized(stream, 30000);
+                    User temp = ClientReadSerilized<User>(stream, 30000);
 
                     DatabaseHandler.UpdateUser(_connectionString,temp);
 
@@ -1452,7 +1452,7 @@ namespace Domus
 
                     _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an AddUser request.");
 
-                    User temp = (User) ClientReadSerilized(stream, 30000);
+                    User temp = ClientReadSerilized<User>(stream, 30000);
 
                     DatabaseHandler.InsertUser(_connectionString, temp);
 
@@ -1653,7 +1653,7 @@ namespace Domus
 
                     _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an SaveCisternConfig request.");
 
-                    CisternConfig temp = (CisternConfig)ClientReadSerilized(stream, 30000);
+                    CisternConfig temp = ClientReadSerilized<CisternConfig>(stream, 30000);
 
                     if (DatabaseHandler.UpdateCisternConfig(_connectionString, temp) == 0)
                     {
@@ -1717,7 +1717,7 @@ namespace Domus
 
                     _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an UpdateLink request.");
 
-                    Service temp = (Service)ClientReadSerilized(stream, 30000);
+                    Service temp = ClientReadSerilized<Service>(stream, 30000);
 
                     if(temp.IsSensor)
                         DatabaseHandler.UnlinkDevicePort(_connectionString, temp.DeviceId, temp.DevicePortNumber);
@@ -1779,7 +1779,7 @@ namespace Domus
 
                     _log.Info("Client " + user.Username + "@" + me.ClientIp + " has sent an AddIrrigationSchedule request.");
 
-                    IrrigationSchedule temp = (IrrigationSchedule)ClientReadSerilized(stream, 30000);
+                    IrrigationSchedule temp = ClientReadSerilized<IrrigationSchedule>(stream, 30000);
 
                     DatabaseHandler.InsertIrrigationSchedule(_connectionString, temp);
 
@@ -1818,7 +1818,7 @@ namespace Domus
 
                     _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an UpdateIrrigationSchedule request.");
 
-                    IrrigationSchedule temp = (IrrigationSchedule)ClientReadSerilized(stream, 30000);
+                    IrrigationSchedule temp = ClientReadSerilized<IrrigationSchedule>(stream, 30000);
 
                     DatabaseHandler.UpdateIrrigationSchedule(_connectionString, temp);
 
@@ -1928,7 +1928,7 @@ namespace Domus
 
                     _log.Info("User " + user.Username + "@" + me.ClientIp + " has sent an SaveIrrigationConfig request.");
 
-                    IrrigationConfig temp = (IrrigationConfig)ClientReadSerilized(stream, 30000);
+                    IrrigationConfig temp = ClientReadSerilized<IrrigationConfig>(stream, 30000);
 
                     if (DatabaseHandler.UpdateIrrigationConfig(_connectionString, temp) == 0)
                     {
@@ -2010,19 +2010,7 @@ namespace Domus
         /// <param name="sendObj">An object to be sent</param>
         private static void ClientWriteSerialized(NetworkStream stream, object sendObj)
         {
-            byte[] userDataBytes;
-            MemoryStream ms = new MemoryStream();
-            BinaryFormatter bf1 = new BinaryFormatter();
-
-            bf1.Serialize(ms, sendObj);
-            userDataBytes = ms.ToArray();
-            byte[] userDataLen = BitConverter.GetBytes((Int32)userDataBytes.Length);
-
-            //primeiro envia o tamanho dos dados a serem enviados para que o cliente se prepare
-            stream.Write(userDataLen, 0, 4);
-
-            //envia os dados para o cliente
-            stream.Write(userDataBytes, 0, userDataBytes.Length);
+            ClientWrite(stream, sendObj.SerializeToJsonString());
         }
 
         /// <summary>
@@ -2031,35 +2019,36 @@ namespace Domus
         /// <param name="stream">A <see cref="NetworkStream"/> pointing to a client</param>
         /// <param name="timeout">Max time to wait for a response</param>
         /// <returns>A deserialized object received from the client.</returns>
-        private static object ClientReadSerilized(NetworkStream stream, int timeout = -1)
+        private static T ClientReadSerilized<T>(NetworkStream stream, int timeout = -1)
         {
-            byte[] readMsgLen = new byte[4];
-            int dataLen;
-            byte[] readMsgData;
-            BinaryFormatter bf1 = new BinaryFormatter();
-            MemoryStream ms;
+            Byte[] bytes = new Byte[1024];
+            string data = null;
+            int i;
 
-            //seta o timeout de leitura dos dados para 30 segundos
-            stream.ReadTimeout = timeout;
+            try
+            {
+                stream.ReadTimeout = timeout;
 
-            //le o tamanho dos dados que serão recebidos
-            stream.Read(readMsgLen, 0, 4);
-            dataLen = BitConverter.ToInt32(readMsgLen, 0);
-            readMsgData = new byte[dataLen];
+                // Loop to receive all the data sent by the client
+                while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
+                {
+                    // Translate data bytes to a ASCII string.
+                    data += System.Text.Encoding.ASCII.GetString(bytes, 0, i);
 
-            //le os dados que estão sendo recebidos
-            stream.Read(readMsgData, 0, dataLen);
+                    if (stream.DataAvailable == false)//impede o lock da função
+                        break;
+                }
 
-            ms = new MemoryStream(readMsgData);
-            ms.Position = 0;
+                //seta o timeout para o valor padrão (infinito)
+                stream.ReadTimeout = -1;
 
-            //converte os dados recebidos para um objeto
-            object objeto = bf1.Deserialize(ms);
-
-            //seta o timeout para o valor padrão (infinito)
-            stream.ReadTimeout = -1;
-
-            return objeto;
+                return data.ParseJsonStringToObject<T>();
+            }
+            catch (Exception e)
+            {
+                _log.Error("Fail to read object from client. " + e.Message, e);
+                throw;
+            }
         }
 
         /// <summary>

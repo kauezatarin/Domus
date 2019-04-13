@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Text;
+using DomusSharedClasses;
 
-namespace DomusSharedClasses
+namespace Domus
 {
     public class Forecast
     {
@@ -19,7 +18,7 @@ namespace DomusSharedClasses
 
         public DateTime SunSet { get; private set; }
 
-        public List<ForecastData> Forecasts {get; private set;}
+        public List<ForecastData> Forecasts { get; private set; }
 
         public Forecast(string locationName, string locationCountry, string locationLatitude, string locationLongitude, DateTime sunRise, DateTime sunSet, List<ForecastData> forecasts)
         {
@@ -34,15 +33,15 @@ namespace DomusSharedClasses
             Forecasts = forecasts;
         }
 
-        public Forecast(List<string> locationData, List<DateTime> sunData, List<ForecastData> forecastDatas)
+        public Forecast(Dictionary<DomusEnums.ForecastLocationParameters, string> locationData, Dictionary<DomusEnums.ForecastSunParameters, DateTime> sunData, List<ForecastData> forecastDatas)
         {
-            LocationName = locationData[0];
-            LocationCountry = locationData[1];
-            LocationLatitude = locationData[2];
-            LocationLongitude = locationData[3];
+            LocationName = locationData[DomusEnums.ForecastLocationParameters.LocationName];
+            LocationCountry = locationData[DomusEnums.ForecastLocationParameters.CountryName];
+            LocationLatitude = locationData[DomusEnums.ForecastLocationParameters.Latitude];
+            LocationLongitude = locationData[DomusEnums.ForecastLocationParameters.Longitude];
 
-            SunRise = sunData[0];
-            SunSet = sunData[1];
+            SunRise = sunData[DomusEnums.ForecastSunParameters.Rise];
+            SunSet = sunData[DomusEnums.ForecastSunParameters.Set];
 
             Forecasts = forecastDatas;
         }

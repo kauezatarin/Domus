@@ -6,14 +6,32 @@ using System.Threading.Tasks;
 
 namespace Domus
 {
+    /// <summary>
+    /// Class that schedules a task that needs to be run at a ginve time
+    /// </summary>
     public abstract class TaskScheduler
     {
         private static BlockingCollection<ScheduledTask> _scheduledTasks = new BlockingCollection<ScheduledTask>(new ConcurrentQueue<ScheduledTask>());
         private static BlockingCollection<double> _deletTasks = new BlockingCollection<double>(new ConcurrentQueue<double>());
         private Thread _schedulerWorker;
         private bool _cancelAll = false;
-        private double _idCounter = 0;
+        private ulong _idCounter = 0;
 
+        /// <summary>
+        /// Represents the repeating time of a task
+        /// </summary>
+        public enum TaskSchedulerRepeatOnceA
+        {
+            Never,
+            Week,
+            Day,
+            Hour,
+            HafHour
+        }
+
+        /// <summary>
+        /// The constructor of the TaskScheduler Class
+        /// </summary>
         protected TaskScheduler()
         {
             _schedulerWorker = new Thread(SchedulerThread);
@@ -22,9 +40,16 @@ namespace Domus
             _schedulerWorker.Start();
         }
 
-        public double ScheduleTask(DateTime runDateTime, Func<Task> taskFunc, string repeat = "no")
+        /// <summary>
+        /// Schedules a new task
+        /// </summary>
+        /// <param name="runDateTime">The date that the task should run</param>
+        /// <param name="taskFunc">The function that the task will run</param>
+        /// <param name="repeat">The repeating time of the task. Use it to auto renew the task.</param>
+        /// <returns>Returns the task id</returns>
+        public ulong ScheduleTask(DateTime runDateTime, Func<Task> taskFunc, TaskSchedulerRepeatOnceA repeat = TaskSchedulerRepeatOnceA.Never)
         {
-            double taskId = GetNextId();
+            ulong taskId = GetNextId();
 
             ScheduledTask temp = new ScheduledTask(runDateTime, taskFunc, repeat, taskId);
 
@@ -35,6 +60,11 @@ namespace Domus
             return taskId;
         }
 
+        /// <summary>
+        /// Deletes a task that corresponds to the given id
+        /// </summary>
+        /// <param name="taskId">The Id of the task that will be deleted</param>
+        /// <returns>True if the task was deleted</returns>
         public bool DeleteTask(double taskId)
         {
             bool success = true;
@@ -57,16 +87,29 @@ namespace Domus
             return success;
         }
 
+        /// <summary>
+        /// Deletes all scheduled tasks
+        /// </summary>
         public void DeleteAllTasks()
         {
             _cancelAll = true;
         }
 
-        public int TasksCount()
+        /// <summary>
+        /// Counts the number of scheduled tasks
+        /// </summary>
+        /// <returns>The number of scheduled tasks</returns>
+        public ulong TasksCount()
         {
             return _scheduledTasks.Count;
         }
 
+        /// <summary>
+        /// Return the next valid date to the given week day
+        /// </summary>
+        /// <param name="start">Date to look forward</param>
+        /// <param name="day">Day of the week to look at</param>
+        /// <returns>The next data when the week day will occur</returns>
         public DateTime GetNextWeekday(DateTime start, DayOfWeek day)
         {
             if ((start - DateTime.Now).TotalMilliseconds < 0 && start.DayOfWeek == day)//caso seja necessário adicionar 7 dias
@@ -82,28 +125,38 @@ namespace Domus
             }
         }
 
-        private double GetNextId()
+        /// <summary>
+        /// Gets the next task id
+        /// </summary>
+        /// <returns>An id</returns>
+        private ulong GetNextId()
         {
             return ++_idCounter;
         }
 
-        private DateTime GetRenewDate(DateTime actualTriggerDate, string repeat)
+        /// <summary>
+        /// Gets the renew date based on the given frequency
+        /// </summary>
+        /// <param name="actualTriggerDate">Actual date that the task ran</param>
+        /// <param name="repeat">The repeat frequency</param>
+        /// <returns></returns>
+        private DateTime GetRenewDate(DateTime actualTriggerDate, TaskSchedulerRepeatOnceA repeat)
         {
             try
             {
-                if (repeat == "weekly")
+                if (repeat == TaskSchedulerRepeatOnceA.Week)
                 {
                     return GetNextWeekday(actualTriggerDate, actualTriggerDate.DayOfWeek);
                 }
-                else if (repeat == "daily")
+                else if (repeat == TaskSchedulerRepeatOnceA.Day)
                 {
                     return actualTriggerDate.AddDays(1);
                 }
-                else if (repeat == "hourly")
+                else if (repeat == TaskSchedulerRepeatOnceA.Hour)
                 {
                     return actualTriggerDate.AddHours(1);
                 }
-                else if (repeat == "hafhourly")
+                else if (repeat == TaskSchedulerRepeatOnceA.HafHour)
                 {
                     return actualTriggerDate.AddMinutes(30);
                 }
@@ -120,6 +173,9 @@ namespace Domus
             }
         }
         
+        /// <summary>
+        /// Method that handles a task life time
+        /// </summary>
         private void SchedulerThread()
         {
             while (true)
@@ -166,7 +222,7 @@ namespace Domus
                         {
                             if (temp.Scheduler.Enabled == false)//if times is stopped
                             {
-                                if (temp.Repeat != "no")//and is set to repeat
+                                if (temp.Repeat != TaskSchedulerRepeatOnceA.Never)//and is set to repeat
                                 {
                                     DateTime newDateTime = GetRenewDate(temp.TriggerDate, temp.Repeat);
 
@@ -217,17 +273,31 @@ namespace Domus
             }
         }
 
+        /// <summary>
+        /// Method that logs the scheduler messages
+        /// </summary>
+        /// <param name="message">Message to be logged</param>
+        /// <param name="e">Exception occurred</param>
         protected abstract void Log(string message, Exception e = null);
-
     }
 
+    /// <summary>
+    /// Class that represents a scheduled Domus system task
+    /// </summary>
     class ScheduledTask
     {
-        public ScheduledTask(DateTime triggerDate, Func<Task> task, string repeat, double taskId)
+        /// <summary>
+        /// The constructor of the <see cref="ScheduledTask"/> class
+        /// </summary>
+        /// <param name="triggerDate">The <see cref="DateTime"/> where the task should run at</param>
+        /// <param name="task">The Method that the task will execute</param>
+        /// <param name="repeat">Inform if the task should repeat</param>
+        /// <param name="taskId">The id of the task</param>
+        public ScheduledTask(DateTime triggerDate, Func<Task> task, TaskScheduler.TaskSchedulerRepeatOnceA repeat, ulong taskId)
         {
             TriggerDate = triggerDate;
 
-            Repeat = repeat.ToLower();
+            Repeat = repeat;
 
             TaskId = taskId;
 
@@ -240,14 +310,31 @@ namespace Domus
             Scheduler.Start();
         }
 
-        public double TaskId { get; private set; }
+        /// <summary>
+        /// Gets the current task id
+        /// </summary>
+        public ulong TaskId { get; private set; }
 
-        public string Repeat { get; private set; }
+        /// <summary>
+        /// Gets when the task should repeat
+        /// </summary>
+        public TaskScheduler.TaskSchedulerRepeatOnceA Repeat { get; private set; }
 
+        /// <summary>
+        /// Gets or sets the date that the task will run
+        /// </summary>
         public DateTime TriggerDate { get; set; }
 
+        /// <summary>
+        /// Gets the Timer of the task
+        /// </summary>
         public System.Timers.Timer Scheduler { get; private set; }
 
+        /// <summary>
+        /// Renews the current task to a given <see cref="DateTime"/>
+        /// </summary>
+        /// <param name="renewTo">The next date when the task should run</param>
+        /// <returns>True if the task was successfully renewed</returns>
         public bool Renew(DateTime renewTo)
         {
             try

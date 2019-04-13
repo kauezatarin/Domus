@@ -144,7 +144,7 @@ namespace Domus
                     temp = temp.Subtract(new TimeSpan(temp.Hour, temp.Minute, temp.Second));//turns a scheduler time to 00:00:00
                     temp = temp.AddDays(1);
 
-                    _scheduler.ScheduleTask(temp, RefreshForecast, "Daily");
+                    _scheduler.ScheduleTask(temp, RefreshForecast, TaskScheduler.TaskSchedulerRepeatOnceA.Day);
 
                     _log.Info("Forecast updater scheduled to run daily at 00:00:00");
 
@@ -380,7 +380,7 @@ namespace Domus
                     {
                         temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Sunday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), "Weekly");
+                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
                         _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -389,7 +389,7 @@ namespace Domus
                     {
                         temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Monday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), "Weekly");
+                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
                         _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -398,7 +398,7 @@ namespace Domus
                     {
                         temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Tuesday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), "Weekly");
+                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
                         _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -407,7 +407,7 @@ namespace Domus
                     {
                         temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Wednesday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), "Weekly");
+                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
                         _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -416,7 +416,7 @@ namespace Domus
                     {
                         temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Thursday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), "Weekly");
+                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
                         _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -425,7 +425,7 @@ namespace Domus
                     {
                         temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Friday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), "Weekly");
+                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
                         _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }
@@ -434,7 +434,7 @@ namespace Domus
                     {
                         temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Saturday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), "Weekly");
+                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
                         _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                     }

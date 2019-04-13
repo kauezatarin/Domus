@@ -5,6 +5,7 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Authors>Kauê Zatarin</Authors>
     <Description>Pacote de bibliotecas compartilhadas utilizadas no projeto Domus.</Description>
+    <Version>1.5.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -101,7 +101,7 @@ namespace Domus
         /// <returns>The number of scheduled tasks</returns>
         public ulong TasksCount()
         {
-            return _scheduledTasks.Count;
+            return Convert.ToUInt64(_scheduledTasks.Count);
         }
 
         /// <summary>

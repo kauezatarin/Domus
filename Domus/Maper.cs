@@ -1,16 +1,15 @@
-﻿using MySql.Data.MySqlClient;
+﻿//Add MySql Library
+
+using MySql.Data.MySqlClient;
 using DomusSharedClasses;
 using System;
 
 namespace Domus
 {
-    /// <summary>
-    /// Class that contains a mapping method for all database models
-    /// </summary>
     public static class Maper
     {
         /// <summary>
-        /// Maps the datareader to an <see cref="User"/> object
+        /// Mapeia o datareader para um objeto User
         /// </summary>
         public static User MapUser(MySqlDataReader dataReader)
         {
@@ -30,7 +29,7 @@ namespace Domus
         }
 
         /// <summary>
-        /// Maps the datareader to a <see cref="Data"/> object
+        /// Mapeia o datareader para um objeto Data
         /// </summary>
         public static Data MapData(MySqlDataReader dataReader)
         {
@@ -47,7 +46,7 @@ namespace Domus
         }
 
         /// <summary>
-        /// Maps the datareader to a <see cref="Device"/> object
+        /// Mapeia o datareader para um objeto Device
         /// </summary>
         public static Device MapDevice(MySqlDataReader dataReader)
         {
@@ -70,7 +69,7 @@ namespace Domus
         }
 
         /// <summary>
-        /// Maps the datareader to an <see cref="IrrigationSchedule"/> object
+        /// Mapeia o datareader para um objeto Device
         /// </summary>
         public static IrrigationSchedule MapIrrigationSchedule(MySqlDataReader dataReader)
         {
@@ -93,7 +92,7 @@ namespace Domus
         }
 
         /// <summary>
-        /// Maps the datareader to a <see cref="CisternConfig"/> object
+        /// Mapeia o datareader para um objeto CisternConfig
         /// </summary>
         public static CisternConfig MapCisternConfig(MySqlDataReader dataReader)
         {
@@ -108,7 +107,7 @@ namespace Domus
         }
 
         /// <summary>
-        /// Maps the datareader to a <see cref="Service"/> object
+        /// Mapeia o datareader para um objeto Service
         /// </summary>
         public static Service MapService(MySqlDataReader dataReader)
         {
@@ -124,7 +123,7 @@ namespace Domus
         }
 
         /// <summary>
-        /// Maps the datareader to an <see cref="IrrigationConfig"/> object
+        /// Mapeia o datareader para um objeto IrrigationConfig
         /// </summary>
         public static IrrigationConfig MapIrrigationConfig(MySqlDataReader dataReader)
         {
@@ -140,7 +139,7 @@ namespace Domus
         }
 
         /// <summary>
-        /// Maps the datareader to a <see cref="WaterConsumeData"/>
+        /// Mapeia o datareader para um objeto WaterConsumeData
         /// </summary>
         public static WaterConsumeData MapWaterConsumeData(MySqlDataReader dataReader)
         {

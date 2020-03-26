@@ -35,8 +35,8 @@ namespace Domus
         private static ILog _log;
         private static TcpListener _deviceServer = null;
         private static TcpListener _clientServer = null;
-        private static Thread _deviceListener = null;
-        private static Thread _clientListener = null;
+        private static Task _deviceListener = null;
+        private static Task _clientListener = null;
         private static Thread _decisionMaker = null;
         private static bool _canRunIrrigation = true;
 
@@ -171,20 +171,11 @@ namespace Domus
 
                 // starts the listening loop. 
                 _log.Info("Starting device listener on port " + _config.DeviceListeningPort);
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                _deviceListener = new Thread(() => DeviceListenerAsync(_deviceServer));
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                _deviceListener.Name = "Device Listener";
-                _deviceListener.Start();
+                _deviceListener = DeviceListenerAsync(_deviceServer);
 
-                
                 _log.Info("Starting client listener on port " + _config.ClientListeningPort);
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                _clientListener = new Thread(() => ClientListenerAsync(_clientServer));
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                _clientListener.Name = "Client Listener";
-                _clientListener.Start();
-                
+                _clientListener = ClientListenerAsync(_clientServer);
+
                 WaitKillCommand();
             }
             catch (SocketException e)
@@ -294,10 +285,10 @@ namespace Domus
 
                 JoinAllConnections();//Wait for all clients and devices to disconnect
 
-                if (_deviceListener != null && _deviceListener.IsAlive)
-                    _deviceListener.Join();
-                if (_clientListener != null && _clientListener.IsAlive)
-                    _clientListener.Join();
+                if (_deviceListener != null && _deviceListener.Status == TaskStatus.WaitingForActivation)
+                    _deviceListener.Wait();
+                if (_clientListener != null && _clientListener.Status == TaskStatus.WaitingForActivation)
+                    _clientListener.Wait();
 
                 _log.Info("Stopped");
 
@@ -312,7 +303,7 @@ namespace Domus
 
                 _log.Info("Cleared");
 
-                _log.Info("Server Stoped.");
+                _log.Info("Server Stopped.");
             }
             catch (Exception e)
             {
@@ -344,10 +335,7 @@ namespace Domus
 
             try
             {
-                if (intranet)
-                    server = new TcpListener(localAddr, port);
-                else
-                    server = new TcpListener(IPAddress.Any, port);
+                server = intranet ? new TcpListener(localAddr, port) : new TcpListener(IPAddress.Any, port);
 
                 return server;
             }
@@ -374,70 +362,70 @@ namespace Domus
 
                 schedule.ScheduleTime = temp;
 
-                if (schedule.Active)
+                if (!schedule.Active)
+                    continue;
+
+                if (schedule.Sunday)
                 {
-                    if (schedule.Sunday)
-                    {
-                        temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Sunday);
+                    temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Sunday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
+                    _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
-                        _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
-                    }
+                    _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                }
 
-                    if (schedule.Monday)
-                    {
-                        temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Monday);
+                if (schedule.Monday)
+                {
+                    temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Monday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
+                    _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
-                        _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
-                    }
+                    _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                }
 
-                    if (schedule.Tuesday)
-                    {
-                        temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Tuesday);
+                if (schedule.Tuesday)
+                {
+                    temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Tuesday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
+                    _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
-                        _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
-                    }
+                    _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                }
 
-                    if (schedule.Wednesday)
-                    {
-                        temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Wednesday);
+                if (schedule.Wednesday)
+                {
+                    temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Wednesday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
+                    _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
-                        _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
-                    }
+                    _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                }
 
-                    if (schedule.Thursday)
-                    {
-                        temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Thursday);
+                if (schedule.Thursday)
+                {
+                    temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Thursday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
+                    _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
-                        _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
-                    }
+                    _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                }
 
-                    if (schedule.Friday)
-                    {
-                        temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Friday);
+                if (schedule.Friday)
+                {
+                    temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Friday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
+                    _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
-                        _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
-                    }
+                    _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
+                }
 
-                    if (schedule.Saturday)
-                    {
-                        temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Saturday);
+                if (schedule.Saturday)
+                {
+                    temp = _scheduler.GetNextWeekday(schedule.ScheduleTime, DayOfWeek.Saturday);
 
-                        _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
+                    _scheduler.ScheduleTask(temp, () => TurnOnIrrigation(schedule.RunFor), TaskScheduler.TaskSchedulerRepeatOnceA.Week);
 
-                        _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
-                    }
+                    _log.Info("Irrigation scheduled to " + temp.ToString(new CultureInfo("pt-BR")));
                 }
             }
         }
